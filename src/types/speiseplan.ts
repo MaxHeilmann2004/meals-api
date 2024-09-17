@@ -1,5 +1,5 @@
 export type Sustainability = {
-    co2: number | null;
+    co2: { id: number; co2Value: number; co2RatingIdentifier: string };
     nutriscore: number | null;
     trafficLight: number | null;
 };

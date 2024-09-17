@@ -1,6 +1,13 @@
 "use client";
 
-import { Cross2Icon } from "@radix-ui/react-icons";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Cross2Icon, InfoCircledIcon } from "@radix-ui/react-icons";
 import {
   endOfDay,
   format,
@@ -8,6 +15,7 @@ import {
   parseISO,
   startOfDay,
 } from "date-fns";
+import { motion } from "framer-motion";
 import React, { useCallback, useMemo, useState } from "react";
 import { DateRange } from "react-day-picker";
 
@@ -16,8 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DatePickerWithRange } from "@/components/ui/DatePickerWithRange";
 import { Input } from "@/components/ui/input";
-
-import { DetailedMeal } from "@/app/meals_api";
+import { DetailedMeal } from "@/lib/meals_api";
 
 // Feature mapping
 const featureMap: Record<string, string> = {
@@ -35,6 +42,37 @@ interface Filters {
   features: string[];
 }
 
+const NutrientDialog: React.FC<{ nutritionalInfo: nutritionalInfo }> = ({
+  nutritionalInfo,
+}) => (
+  <Dialog>
+    <DialogTrigger asChild>
+      <Button variant="ghost" size="icon">
+        <InfoCircledIcon className="h-4 w-4" />
+      </Button>
+    </DialogTrigger>
+    <DialogContent>
+      <DialogHeader>
+        <DialogTitle>Nutrient Information</DialogTitle>
+      </DialogHeader>
+      <div className="grid grid-cols-2 gap-2">
+        <p>Energy: {nutritionalInfo.kj} kJ</p>
+        <p>Calories: {nutritionalInfo.kcal} kcal</p>
+        <p>Fat: {nutritionalInfo.fat?.toFixed(1) ?? "N/A"}g</p>
+        <p>
+          Saturated Fat: {nutritionalInfo.saturatedFat?.toFixed(1) ?? "N/A"}g
+        </p>
+        <p>
+          Carbohydrates: {nutritionalInfo.carbohydrates?.toFixed(1) ?? "N/A"}g
+        </p>
+        <p>Sugar: {nutritionalInfo.sugar?.toFixed(1) ?? "N/A"}g</p>
+        <p>Protein: {nutritionalInfo.protein?.toFixed(1) ?? "N/A"}g</p>
+        <p>Salt: {nutritionalInfo.salt?.toFixed(1) ?? "N/A"}g</p>
+      </div>
+    </DialogContent>
+  </Dialog>
+);
+
 const CardList: React.FC<CardListProps> = ({ initialData }) => {
   const [meals] = useState<DetailedMeal[]>(() =>
     initialData.map((meal) => ({
@@ -48,7 +86,10 @@ const CardList: React.FC<CardListProps> = ({ initialData }) => {
     features: [],
   });
   const [search, setSearch] = useState("");
-  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(() => ({
+    from: new Date(),
+    to: new Date(),
+  }));
 
   const handleDateRangeChange = useCallback(
     (newDateRange: DateRange | undefined) => {
@@ -56,6 +97,52 @@ const CardList: React.FC<CardListProps> = ({ initialData }) => {
     },
     []
   );
+
+  const getCO2Color = useMemo(() => {
+    // CO2 emission benchmarks (in grams) for individual meals
+    const benchmarks = {
+      veryLow: 0, // 0g CO2e
+      low: 200, // 0.2kg CO2e
+      medium: 500, // 0.5kg CO2e
+      high: 1000, // 1kg CO2e
+      veryHigh: 1500, // 1.5kg CO2e and above
+    };
+
+    return (co2Value: number) => {
+      let normalizedValue: number;
+
+      if (co2Value <= benchmarks.veryLow) {
+        normalizedValue = 0;
+      } else if (co2Value <= benchmarks.low) {
+        normalizedValue =
+          ((co2Value - benchmarks.veryLow) /
+            (benchmarks.low - benchmarks.veryLow)) *
+          0.25;
+      } else if (co2Value <= benchmarks.medium) {
+        normalizedValue =
+          0.25 +
+          ((co2Value - benchmarks.low) / (benchmarks.medium - benchmarks.low)) *
+            0.25;
+      } else if (co2Value <= benchmarks.high) {
+        normalizedValue =
+          0.5 +
+          ((co2Value - benchmarks.medium) /
+            (benchmarks.high - benchmarks.medium)) *
+            0.25;
+      } else if (co2Value <= benchmarks.veryHigh) {
+        normalizedValue =
+          0.75 +
+          ((co2Value - benchmarks.high) /
+            (benchmarks.veryHigh - benchmarks.high)) *
+            0.25;
+      } else {
+        normalizedValue = 1;
+      }
+
+      const hue = (1 - normalizedValue) * 120; // 120 is green, 0 is red
+      return `hsl(${hue}, 100%, 35%)`; // Adjusted lightness for better visibility
+    };
+  }, []);
 
   const filterOptions = useMemo(() => {
     const options: Record<
@@ -153,6 +240,36 @@ const CardList: React.FC<CardListProps> = ({ initialData }) => {
   const isFiltered =
     Object.values(filters).some((v) => v.length > 0) || !!dateRange;
 
+  const container = {
+    hidden: { opacity: 1, scale: 0 },
+    visible: {
+      opacity: 1,
+      scale: 1,
+      transition: {
+        delayChildren: 0.3,
+        staggerChildren: 0.2,
+      },
+    },
+  };
+
+  const item = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+    },
+  };
+
+  const sortedAndFilteredMeals = useMemo(() => {
+    return filteredMeals
+      .slice() // Create a shallow copy to avoid mutating the original array
+      .sort((a, b) => {
+        const co2A = a.sustainability?.co2?.co2Value ?? Infinity;
+        const co2B = b.sustainability?.co2?.co2Value ?? Infinity;
+        return co2A - co2B;
+      });
+  }, [filteredMeals]);
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
@@ -195,22 +312,56 @@ const CardList: React.FC<CardListProps> = ({ initialData }) => {
         </div>
       </div>
       <div>Total meals: {filteredMeals.length}</div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <motion.div
+        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"
+        variants={container}
+        initial="hidden"
+        animate="visible"
+      >
         {filteredMeals.map((meal) => (
-          <Card key={meal.id}>
-            <CardHeader>
-              <CardTitle>{meal.title}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p>Date: {format(parseISO(meal.date), "PP")}</p>
-              <p>Price: €{meal.price.toFixed(2)}</p>
-              <p>Canteen: {meal.canteen.name}</p>
-              <p>Allergens: {meal.allergens.join(", ")}</p>
-              <p>Features: {meal.features.join(", ")}</p>
-            </CardContent>
-          </Card>
+          <motion.div key={meal.id} variants={item}>
+            <Card className="overflow-hidden">
+              <div className="h-40 overflow-hidden">
+                <img
+                  src={
+                    meal.imageUrl ||
+                    "https://kochwerk.konkaapps.de/KMSLiveRessources/speiseplangericht/Dummygerichtbild.jpg"
+                  }
+                  alt={meal.title}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <CardHeader className="p-3 flex flex-row justify-between items-start">
+                <CardTitle className="text-sm text-primary">
+                  {meal.title}
+                </CardTitle>
+                <NutrientDialog nutritionalInfo={meal.nutritionalInfo} />
+              </CardHeader>
+              <CardContent className="p-3 pt-0 text-xs">
+                <p>Date: {format(parseISO(meal.date), "PP")}</p>
+                <p>Price: €{meal.price.toFixed(2)}</p>
+                <p>Canteen: {meal.canteen.name}</p>
+                <p>Allergens: {meal.allergens.join(", ")}</p>
+                <p>Features: {meal.features.join(", ")}</p>
+                {meal.sustainability?.co2 && (
+                  <div className="flex items-center mt-2">
+                    <div
+                      className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium text-white"
+                      style={{
+                        backgroundColor: getCO2Color(
+                          meal.sustainability.co2.co2Value
+                        ),
+                      }}
+                    >
+                      CO2: {meal.sustainability.co2.co2Value}g
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
     </div>
   );
 };

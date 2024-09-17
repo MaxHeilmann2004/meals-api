@@ -1,6 +1,6 @@
 // File: app/api/meals/route.ts
 
-import { getAllDetailedMeals } from '@/app/meals_api';
+import { getAllDetailedMeals } from '@/lib/meals_api';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
