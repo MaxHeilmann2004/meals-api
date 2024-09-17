@@ -2,9 +2,13 @@
     "name": "meals-api",
     "version": "0.1.0",
     "description": "",
-    "main": "index.js",
+    "main": "build/index.js",
+    "files": [
+        "build"
+    ],
     "scripts": {
         "build": "tsc",
+        "prepare": "tsc",
         "test": "vitest"
     },
     "keywords": [],
