@@ -13,7 +13,13 @@ async function getKochwerkToken() {
     return match[1];
 }
 
-export async function getMeals(time: Date, mealLocation: MealLocation, saveResInFile = false) {
+/** Get meals for a specified time periode 
+ *  @param start The start of the periode
+ *  @param end The end of the periode
+ *  @param mealLocation The cafeteria
+ *  @param [saveResInFile=false] For debugging purposes response can be saved to a file in current working directory as `response.json`
+*/
+async function getMeals(start: Date, end: Date, mealLocation: MealLocation, saveResInFile = false) {
     const token = await getKochwerkToken();
     if (token == null) throw new Error("Could not fetch token");
 
@@ -58,7 +64,8 @@ export function transformMeal(meal: SpeiseplanGerichtData): Meal {
     };
 }
 
-export class MealLocation {
+/** The cafeteria a meal is located in */
+class MealLocation {
     readonly name: string;
     readonly mealsApiKey: string;
     private constructor(name: string, mealsApiKey: string) {
