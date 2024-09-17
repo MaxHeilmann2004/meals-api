@@ -1,4 +1,4 @@
-import { writeFile } from "fs/promises";
+import { writeFile } from "node:fs/promises";
 import { Meal, ResponseData, SpeiseplanGerichtData, SpeiseplanLocation } from "./speiseplan";
 
 const KOCHWERK_MAIN_JS = "https://kochwerk-web.webspeiseplan.de/main.bf4740fd495508f750f5.js";
