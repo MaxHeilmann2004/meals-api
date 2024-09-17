@@ -109,6 +109,7 @@ export type ResponseData = {
 
 export type Meal = {
     id: number;
+    hash: number;
     title: string;
     categoryId: number;
     imageUrl: string;

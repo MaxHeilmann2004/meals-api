@@ -1,4 +1,5 @@
 import { Meal, ResponseData, SpeiseplanGerichtData, SpeiseplanLocation } from "./speiseplan";
+import hashing from "./utils/hashing";
 
 const KOCHWERK_MAIN_JS = "https://kochwerk-web.webspeiseplan.de/main.bf4740fd495508f750f5.js";
 const KOCHWERK_TOKEN_REGEX = /PROXY_TOKEN:"([A-Za-z0-9]+)"/;
@@ -54,6 +55,7 @@ function extractMeals(data: SpeiseplanLocation[], mealLocation: MealLocation | M
 function transformMeal(meal: SpeiseplanGerichtData): Meal {
     return {
         id: meal.speiseplanAdvancedGericht.id,
+        hash: hashing.cyrb53(meal.speiseplanAdvancedGericht.gerichtname),
         title: meal.speiseplanAdvancedGericht.gerichtname,
         categoryId: meal.speiseplanAdvancedGericht.gerichtkategorieID,
         imageUrl: meal.zusatzinformationen.gerichtImage,
