@@ -79,3 +79,5 @@ class MealLocation {
     static Boulevard = new MealLocation("Boulevard", "Bistro Boulevard Mittag");
     static Kiosk = new MealLocation("Kiosk", "Kochwerk Kiosk");
 }
+
+export default {getMeals, MealLocation}
