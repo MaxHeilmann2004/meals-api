@@ -30,7 +30,7 @@ async function getMeals(start: Date, end: Date, mealLocation: MealLocation, save
     if (saveResInFile) {
         await writeFile("response.json", JSON.stringify(body, null, 4));
     }
-    const meals = extractMeals(body.content, mealLocation, time, time);
+    const meals = extractMeals(body.content, mealLocation, start, end);
     return meals;
 }
 
