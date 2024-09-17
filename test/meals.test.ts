@@ -35,3 +35,10 @@ test("get meals for 'Boulevard' monday of this week", async () => {
     const mealsBoulevard = await MealsAPI.getMeals(monday, monday, MealLocation.Boulevard);
     expect(mealsBoulevard.length).toBeGreaterThan(0);
 });
+
+test("get meals for 'Boulevard' and 'Steelrunner' monday of this week", async () => {
+    const monday = getMonday();
+
+    const mealsBoulevardSteelrunner = await MealsAPI.getMeals(monday, monday, [MealLocation.Boulevard, MealLocation.Steelrunner]);
+    expect(mealsBoulevardSteelrunner.length).toBeGreaterThan(0);
+});
