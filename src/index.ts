@@ -75,7 +75,6 @@ export class MealLocation {
     static Steelrunner = new MealLocation("Steelrunner", "Steelrunner");
     static Bonprix = new MealLocation("Bonprix", "bonprix");
     static Boulevard = new MealLocation("Boulevard", "Bistro Boulevard Mittag");
-    static Kiosk = new MealLocation("Kiosk", "Kochwerk Kiosk");
 }
 
 export default {getMeals}
