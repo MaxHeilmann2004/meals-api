@@ -1,4 +1,3 @@
-import { writeFile } from "node:fs/promises";
 import { Meal, ResponseData, SpeiseplanGerichtData, SpeiseplanLocation } from "./speiseplan";
 
 const KOCHWERK_MAIN_JS = "https://kochwerk-web.webspeiseplan.de/main.bf4740fd495508f750f5.js";
@@ -17,17 +16,13 @@ async function getKochwerkToken() {
  *  @param start The start of the periode
  *  @param end The end of the periode
  *  @param mealLocation The cafeteria or an array of cafeterias
- *  @param [saveResInFile=false] For debugging purposes response can be saved to a file in current working directory as `response.json`
  */
-async function getMeals(start: Date, end: Date, mealLocation: MealLocation | MealLocation[], saveResInFile = false) {
+async function getMeals(start: Date, end: Date, mealLocation: MealLocation | MealLocation[]) {
     const token = await getKochwerkToken();
     if (token == null) throw new Error("Could not fetch token");
 
     const req = await fetch(KOCHWERK_MEALS_ENDPOINT + "&token=" + token, { headers: { Referer: "test" } });
     const body = (await req.json()) as ResponseData;
-    if (saveResInFile) {
-        await writeFile("response.json", JSON.stringify(body, null, 4));
-    }
     const meals = extractMeals(body.content, mealLocation, start, end);
     return meals;
 }
