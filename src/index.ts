@@ -13,13 +13,13 @@ async function getKochwerkToken() {
     return match[1];
 }
 
-/** Get meals for a specified time periode 
+/** Get meals for a specified time periode
  *  @param start The start of the periode
  *  @param end The end of the periode
- *  @param mealLocation The cafeteria
+ *  @param mealLocation The cafeteria or an array of cafeterias
  *  @param [saveResInFile=false] For debugging purposes response can be saved to a file in current working directory as `response.json`
-*/
-async function getMeals(start: Date, end: Date, mealLocation: MealLocation, saveResInFile = false) {
+ */
+async function getMeals(start: Date, end: Date, mealLocation: MealLocation | MealLocation[], saveResInFile = false) {
     const token = await getKochwerkToken();
     if (token == null) throw new Error("Could not fetch token");
 
@@ -32,13 +32,17 @@ async function getMeals(start: Date, end: Date, mealLocation: MealLocation, save
     return meals;
 }
 
-function extractMeals(data: SpeiseplanLocation[], mealLocation: MealLocation, start: Date, end: Date) {
+function extractMeals(data: SpeiseplanLocation[], mealLocation: MealLocation | MealLocation[], start: Date, end: Date) {
     // Initialize an array to hold all meals from all locations
     const allMeals: Meal[] = [];
 
     // Iterate through each location in the content array
     for (const location of data) {
-        if (location.speiseplanAdvanced.titel != mealLocation.mealsApiKey) continue;
+        if (mealLocation instanceof MealLocation) {
+            if (location.speiseplanAdvanced.titel != mealLocation.mealsApiKey) continue;
+        } else {
+            if (!(mealLocation as MealLocation[]).some((mealLocation) => mealLocation.mealsApiKey == location.speiseplanAdvanced.titel)) continue;
+        }
         const speiseplanGerichtData = location.speiseplanGerichtData;
         for (const meal of speiseplanGerichtData) {
             const mealDate = new Date(meal.speiseplanAdvancedGericht.datum);
@@ -77,4 +81,4 @@ export class MealLocation {
     static Boulevard = new MealLocation("Boulevard", "Bistro Boulevard Mittag");
 }
 
-export default {getMeals}
+export default { getMeals };
