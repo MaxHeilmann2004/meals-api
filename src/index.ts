@@ -32,7 +32,7 @@ async function getMeals(start: Date, end: Date, mealLocation: MealLocation, save
     return meals;
 }
 
-export function extractMeals(data: SpeiseplanLocation[], mealLocation: MealLocation, start: Date, end: Date) {
+function extractMeals(data: SpeiseplanLocation[], mealLocation: MealLocation, start: Date, end: Date) {
     // Initialize an array to hold all meals from all locations
     const allMeals: Meal[] = [];
 
@@ -52,7 +52,7 @@ export function extractMeals(data: SpeiseplanLocation[], mealLocation: MealLocat
     return allMeals;
 }
 
-export function transformMeal(meal: SpeiseplanGerichtData): Meal {
+function transformMeal(meal: SpeiseplanGerichtData): Meal {
     return {
         id: meal.speiseplanAdvancedGericht.id,
         title: meal.speiseplanAdvancedGericht.gerichtname,
