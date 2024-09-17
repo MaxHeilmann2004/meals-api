@@ -23,8 +23,6 @@ async function getMeals(start: Date, end: Date, mealLocation: MealLocation, save
     const token = await getKochwerkToken();
     if (token == null) throw new Error("Could not fetch token");
 
-    console.log("Date:", time);
-
     const req = await fetch(KOCHWERK_MEALS_ENDPOINT + "&token=" + token, { headers: { Referer: "test" } });
     const body = (await req.json()) as ResponseData;
     if (saveResInFile) {
