@@ -63,7 +63,7 @@ function transformMeal(meal: SpeiseplanGerichtData): Meal {
 }
 
 /** The cafeteria a meal is located in */
-class MealLocation {
+export class MealLocation {
     readonly name: string;
     readonly mealsApiKey: string;
     private constructor(name: string, mealsApiKey: string) {
@@ -78,4 +78,4 @@ class MealLocation {
     static Kiosk = new MealLocation("Kiosk", "Kochwerk Kiosk");
 }
 
-export default {getMeals, MealLocation}
+export default {getMeals}
