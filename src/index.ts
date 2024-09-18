@@ -18,7 +18,7 @@ async function getKochwerkToken() {
  *  @param end The end of the periode
  *  @param mealLocation The cafeteria or an array of cafeterias
  */
-const getMeals = async (start: Date, end: Date, mealLocation: MealLocation | MealLocation[]) => {
+async function getMeals(start: Date, end: Date, mealLocation: MealLocation | MealLocation[]) {
     const token = await getKochwerkToken();
     if (token == null) throw new Error("Could not fetch token");
 
@@ -26,7 +26,7 @@ const getMeals = async (start: Date, end: Date, mealLocation: MealLocation | Mea
     const body = (await req.json()) as ResponseData;
     const meals = extractMeals(body.content, mealLocation, start, end);
     return meals;
-};
+}
 
 function extractMeals(data: SpeiseplanLocation[], mealLocation: MealLocation | MealLocation[], start: Date, end: Date) {
     // Initialize an array to hold all meals from all locations
@@ -78,5 +78,6 @@ export class MealLocation {
     static Boulevard = new MealLocation("Boulevard", "Bistro Boulevard Mittag");
 }
 
-export default { getMeals };
+const MealsAPI = { getMeals };
+export default MealsAPI;
 export type { Meal };

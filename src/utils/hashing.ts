@@ -14,6 +14,5 @@ const cyrb53 = (str: string, seed = 0) => {
     return 4294967296 * (2097151 & h2) + (h1 >>> 0);
 };
 
-export default {
-    cyrb53,
-};
+const hashing = { cyrb53 };
+export default hashing;
