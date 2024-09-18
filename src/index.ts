@@ -79,3 +79,4 @@ export class MealLocation {
 }
 
 export default { getMeals };
+export { Meal };
