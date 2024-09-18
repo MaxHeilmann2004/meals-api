@@ -78,5 +78,6 @@ export class MealLocation {
     static Boulevard = new MealLocation("Boulevard", "Bistro Boulevard Mittag");
 }
 
-export default { getMeals };
-export { Meal };
+const MealsAPI = { getMeals };
+export default MealsAPI;
+export type { Meal };
