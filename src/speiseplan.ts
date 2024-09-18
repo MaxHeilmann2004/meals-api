@@ -1,7 +1,13 @@
 export type Sustainability = {
-    co2: number | null;
+    co2: CO2 | null;
     nutriscore: number | null;
     trafficLight: number | null;
+};
+
+export type CO2 = {
+    id: number;
+    co2Value: number;
+    co2RatingIdentifier: string;
 };
 
 export type Zusatzinformationen = {
@@ -116,4 +122,21 @@ export type Meal = {
     price: number;
     studentPrice: number;
     isVegan: boolean;
+    nutrition: Nutrition;
+    co2?: number;
+};
+
+export type Nutrition = {
+    calories: Calories;
+    fat: number;
+    saturatedFattyAcids: number;
+    carbs: number;
+    protein: number;
+    sodium: number;
+    sugar: number;
+};
+
+export type Calories = {
+    kcal: number;
+    kj: number;
 };
