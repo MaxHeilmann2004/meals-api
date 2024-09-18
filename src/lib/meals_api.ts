@@ -46,6 +46,10 @@ function transformData(locations: SpeiseplanLocation[]): DetailedMeal[] {
     );
 }
 
+function getReducedPrice(preis: Float32Array, ) {
+    return 
+}
+
 function transformMeal(mealData: SpeiseplanGerichtData, canteenInfo: SpeiseplanAdvanced): DetailedMeal {
     const { speiseplanAdvancedGericht, zusatzinformationen } = mealData;
     
@@ -54,6 +58,18 @@ function transformMeal(mealData: SpeiseplanGerichtData, canteenInfo: SpeiseplanA
         title: speiseplanAdvancedGericht.gerichtname,
         alternativeTitle: zusatzinformationen.gerichtnameAlternative,
         categoryId: speiseplanAdvancedGericht.gerichtkategorieID,
+        categoryStringified: (id => (id >= 238 && id <= 241) ? "Daily Greens" : ({
+            201: "The Original",
+            233: "Original Soup",
+            1483: "F&T Vegan",
+            1485: "F&T Topping 1",
+            1486: "F&T Topping 2",
+            234: "Grill",
+            243: "Pizza Station",
+            242: "Pasta Station",
+            235: "Salatbar",
+            244: "Backwaren"
+        }[id] || "Unknown Category"))(speiseplanAdvancedGericht.gerichtkategorieID),
         imageUrl: zusatzinformationen.gerichtImage,
         price: zusatzinformationen.mitarbeiterpreisDecimal2,
         guestPrice: zusatzinformationen.gaestepreisDecimal2,

@@ -59,7 +59,7 @@ export function DatePickerWithRange({
             defaultMonth={date?.from}
             selected={date}
             onSelect={(newDate) => {
-              console.log("Date selected in Calendar:", newDate);
+              // console.log("Date selected in Calendar:", newDate);
               setDate(newDate);
             }}
             numberOfMonths={2}
