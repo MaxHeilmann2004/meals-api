@@ -3,7 +3,7 @@ import MealsAPI, { MealLocation } from "../src";
 
 function getMonday() {
     const d = new Date();
-    var day = d.getDay(),
+    const day = d.getDay(),
         diff = d.getDate() - day + (day == 0 ? -6 : 1); // adjust when day is sunday
     return new Date(d.setDate(diff));
 }
