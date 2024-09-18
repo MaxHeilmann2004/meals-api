@@ -62,18 +62,20 @@ function transformMeal(meal: SpeiseplanGerichtData): Meal {
         price: meal.zusatzinformationen.mitarbeiterpreisDecimal2,
         isVegan: meal.speiseplanAdvancedGericht.gerichtname.toLowerCase().includes("vegan"), // TODO: find a better way to determine if a meal is vegan
         studentPrice: meal.zusatzinformationen.mitarbeiterpreisDecimal2, // TODO: this is not correct, it should be the student price
-        nutrition: {
-            calories: {
-                kcal: meal.zusatzinformationen.nwkcalInteger,
-                kj: meal.zusatzinformationen.nwkjInteger,
-            },
-            carbs: meal.zusatzinformationen.nwkohlehydrateDecimal1,
-            fat: meal.zusatzinformationen.nwfettDecimal1,
-            saturatedFattyAcids: meal.zusatzinformationen.nwfettsaeurenDecimal1,
-            protein: meal.zusatzinformationen.nweiweissDecimal1,
-            sodium: meal.zusatzinformationen.nwsalzDecimal1,
-            sugar: meal.zusatzinformationen.nwzuckerDecimal1,
-        },
+        nutrition: meal.zusatzinformationen.nwkcalInteger
+            ? {
+                  calories: {
+                      kcal: meal.zusatzinformationen.nwkcalInteger,
+                      kj: meal.zusatzinformationen.nwkjInteger,
+                  },
+                  carbs: meal.zusatzinformationen.nwkohlehydrateDecimal1,
+                  fat: meal.zusatzinformationen.nwfettDecimal1,
+                  saturatedFattyAcids: meal.zusatzinformationen.nwfettsaeurenDecimal1,
+                  protein: meal.zusatzinformationen.nweiweissDecimal1,
+                  sodium: meal.zusatzinformationen.nwsalzDecimal1,
+                  sugar: meal.zusatzinformationen.nwzuckerDecimal1,
+              }
+            : undefined,
         co2: meal.zusatzinformationen.sustainability.co2?.co2Value,
     };
 }

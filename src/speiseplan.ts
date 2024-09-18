@@ -122,7 +122,7 @@ export type Meal = {
     price: number;
     studentPrice: number;
     isVegan: boolean;
-    nutrition: Nutrition;
+    nutrition?: Nutrition;
     co2?: number;
 };
 
