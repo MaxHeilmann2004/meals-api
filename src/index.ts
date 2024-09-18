@@ -60,6 +60,8 @@ function transformMeal(meal: SpeiseplanGerichtData): Meal {
         categoryId: meal.speiseplanAdvancedGericht.gerichtkategorieID,
         imageUrl: meal.zusatzinformationen.gerichtImage,
         price: meal.zusatzinformationen.mitarbeiterpreisDecimal2,
+        isVegan: meal.speiseplanAdvancedGericht.gerichtname.includes("vegan"), // TODO: find a better way to determine if a meal is vegan
+        studentPrice: meal.zusatzinformationen.mitarbeiterpreisDecimal2, // TODO: this is not correct, it should be the student price
     };
 }
 

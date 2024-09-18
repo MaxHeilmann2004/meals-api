@@ -114,4 +114,6 @@ export type Meal = {
     categoryId: number;
     imageUrl: string;
     price: number;
+    studentPrice: number;
+    isVegan: boolean;
 };
