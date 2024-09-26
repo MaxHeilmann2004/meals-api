@@ -112,7 +112,7 @@ function getStudentPrice(mealData: SpeiseplanGerichtData) {
 
 interface DetailedMeal {
 	id: number;
-    plu: string;
+    plu?: string | null;
 	title: string;
 	hash: number;
 	alternativeTitle: string;
