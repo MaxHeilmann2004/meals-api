@@ -112,31 +112,3 @@ export type ResponseData = {
     success: boolean;
     content: SpeiseplanLocation[];
 };
-
-export type Meal = {
-    id: number;
-    hash: number;
-    title: string;
-    categoryId: number;
-    imageUrl: string;
-    price: number;
-    studentPrice: number;
-    isVegan: boolean;
-    nutrition?: Nutrition;
-    co2?: number;
-};
-
-export type Nutrition = {
-    calories: Calories;
-    fat: number;
-    saturatedFattyAcids: number;
-    carbs: number;
-    protein: number;
-    sodium: number;
-    sugar: number;
-};
-
-export type Calories = {
-    kcal: number;
-    kj: number;
-};

@@ -1,16 +1,13 @@
-import { Meal, ResponseData, SpeiseplanGerichtData, SpeiseplanLocation } from "./speiseplan";
-import hashing from "./utils/hashing";
-
-const KOCHWERK_MAIN_JS = "https://kochwerk-web.webspeiseplan.de/main.bf4740fd495508f750f5.js";
-const KOCHWERK_TOKEN_REGEX = /PROXY_TOKEN:"([A-Za-z0-9]+)"/;
-const KOCHWERK_MEALS_ENDPOINT = "https://kochwerk-web.webspeiseplan.de/index.php?model=menu&location=1800&languagetype=1&_=1691667030626";
+import { KOCHWERK_MAIN_JS, KOCHWERK_MEALS_ENDPOINT, KOCHWERK_TOKEN_REGEX, STUDENT_DISCOUNT_INDEX } from './constants';
+import { ResponseData, SpeiseplanAdvanced, SpeiseplanGerichtData, SpeiseplanLocation, Zusatzinformationen } from './speiseplan';
+import hashing from './utils/hashing';
 
 async function getKochwerkToken() {
-    const req = await fetch(KOCHWERK_MAIN_JS);
-    const body = await req.text();
-    const match = body.match(KOCHWERK_TOKEN_REGEX);
-    if (match == null) return null;
-    return match[1];
+	const req = await fetch(KOCHWERK_MAIN_JS);
+	const body = await req.text();
+	const match = body.match(KOCHWERK_TOKEN_REGEX);
+	if (match == null) return null;
+	return match[1];
 }
 
 /** Get meals for a specified time periode
@@ -18,83 +15,179 @@ async function getKochwerkToken() {
  *  @param end The end of the periode
  *  @param mealLocation The cafeteria or an array of cafeterias
  */
-async function getMeals(start: Date, end: Date, mealLocation: MealLocation | MealLocation[]) {
-    const token = await getKochwerkToken();
-    if (token == null) throw new Error("Could not fetch token");
+async function getMeals(start: Date, end: Date, mealLocation?: MealLocation | MealLocation[] | undefined) {
+	const token = await getKochwerkToken();
+	if (token == null) throw new Error('Could not fetch token');
 
-    const req = await fetch(KOCHWERK_MEALS_ENDPOINT + "&token=" + token, { headers: { Referer: "test" } });
-    const body = (await req.json()) as ResponseData;
-    const meals = extractMeals(body.content, mealLocation, start, end);
-    return meals;
+	const req = await fetch(KOCHWERK_MEALS_ENDPOINT + '&token=' + token, { headers: { Referer: 'test' } });
+	const body = (await req.json()) as ResponseData;
+	const meals = extractMeals(body.content, mealLocation, start, end);
+	return meals;
 }
 
-function extractMeals(data: SpeiseplanLocation[], mealLocation: MealLocation | MealLocation[], start: Date, end: Date) {
-    // Initialize an array to hold all meals from all locations
-    const allMeals: Meal[] = [];
+function extractMeals(data: SpeiseplanLocation[], mealLocation: MealLocation | MealLocation[] | undefined, start: Date, end: Date) {
+	// Initialize an array to hold all meals from all locations
+	const allMeals: DetailedMeal[] = [];
 
-    // Iterate through each location in the content array
-    for (const location of data) {
-        if (mealLocation instanceof MealLocation) {
-            if (location.speiseplanAdvanced.titel != mealLocation.mealsApiKey) continue;
-        } else {
-            if (!(mealLocation as MealLocation[]).some((mealLocation) => mealLocation.mealsApiKey == location.speiseplanAdvanced.titel)) continue;
-        }
-        const speiseplanGerichtData = location.speiseplanGerichtData;
-        for (const meal of speiseplanGerichtData) {
-            const mealDate = new Date(meal.speiseplanAdvancedGericht.datum);
-            if (mealDate.getFullYear() < start.getFullYear() || mealDate.getFullYear() > end.getFullYear()) continue;
-            if (mealDate.getMonth() < start.getMonth() || mealDate.getMonth() > end.getMonth()) continue;
-            if (mealDate.getDate() < start.getDate() || mealDate.getDate() > end.getDate()) continue;
-            allMeals.push(transformMeal(meal));
-        }
-    }
+	// Iterate through each location in the content array
+	for (const location of data) {
+		if (mealLocation instanceof MealLocation) {
+			if (location.speiseplanAdvanced.titel != mealLocation.mealsApiKey) continue;
+		} else if (mealLocation != undefined) {
+			if (!(mealLocation as MealLocation[]).some((mealLocation) => mealLocation.mealsApiKey == location.speiseplanAdvanced.titel)) continue;
+		}
+		const speiseplanGerichtData = location.speiseplanGerichtData;
+		if (!Array.isArray(speiseplanGerichtData)) continue;
+		for (const meal of speiseplanGerichtData) {
+			const mealDate = new Date(meal.speiseplanAdvancedGericht.datum);
+			if (mealDate.getFullYear() < start.getFullYear() || mealDate.getFullYear() > end.getFullYear()) continue;
+			if (mealDate.getMonth() < start.getMonth() || mealDate.getMonth() > end.getMonth()) continue;
+			if (mealDate.getDate() < start.getDate() || mealDate.getDate() > end.getDate()) continue;
+			allMeals.push(transformMeal(meal, location.speiseplanAdvanced));
+		}
+	}
 
-    return allMeals;
+	return allMeals;
 }
 
-function transformMeal(meal: SpeiseplanGerichtData): Meal {
-    return {
-        id: meal.speiseplanAdvancedGericht.id,
-        hash: hashing.cyrb53(meal.speiseplanAdvancedGericht.gerichtname),
-        title: meal.speiseplanAdvancedGericht.gerichtname,
-        categoryId: meal.speiseplanAdvancedGericht.gerichtkategorieID,
-        imageUrl: meal.zusatzinformationen.gerichtImage,
-        price: meal.zusatzinformationen.mitarbeiterpreisDecimal2,
-        isVegan: meal.speiseplanAdvancedGericht.gerichtname.toLowerCase().includes("vegan"), // TODO: find a better way to determine if a meal is vegan
-        studentPrice: meal.zusatzinformationen.mitarbeiterpreisDecimal2, // TODO: this is not correct, it should be the student price
-        nutrition: meal.zusatzinformationen.nwkcalInteger
-            ? {
-                  calories: {
-                      kcal: meal.zusatzinformationen.nwkcalInteger,
-                      kj: meal.zusatzinformationen.nwkjInteger,
-                  },
-                  carbs: meal.zusatzinformationen.nwkohlehydrateDecimal1,
-                  fat: meal.zusatzinformationen.nwfettDecimal1,
-                  saturatedFattyAcids: meal.zusatzinformationen.nwfettsaeurenDecimal1,
-                  protein: meal.zusatzinformationen.nweiweissDecimal1,
-                  sodium: meal.zusatzinformationen.nwsalzDecimal1,
-                  sugar: meal.zusatzinformationen.nwzuckerDecimal1,
-              }
-            : undefined,
-        co2: meal.zusatzinformationen.sustainability.co2?.co2Value,
-    };
+function transformMeal(mealData: SpeiseplanGerichtData, canteenInfo: SpeiseplanAdvanced): DetailedMeal {
+	const { speiseplanAdvancedGericht, zusatzinformationen } = mealData;
+
+	return {
+		id: speiseplanAdvancedGericht.id,
+		plu: zusatzinformationen.plu,
+		title: speiseplanAdvancedGericht.gerichtname,
+		hash: hashing.cyrb53(speiseplanAdvancedGericht.gerichtname),
+		alternativeTitle: zusatzinformationen.gerichtnameAlternative,
+		categoryId: speiseplanAdvancedGericht.gerichtkategorieID,
+		imageUrl: zusatzinformationen.gerichtImage,
+		price: zusatzinformationen.mitarbeiterpreisDecimal2,
+		studentPrice: getStudentPrice(mealData),
+		guestPrice: zusatzinformationen.gaestepreisDecimal2,
+		date: speiseplanAdvancedGericht.datum,
+		nutritionalInfo: extractNutritionalInfo(zusatzinformationen),
+		allergens: mealData.allergeneIds ? mealData.allergeneIds.split(',').map((id) => parseInt(id)) : [],
+		additives: mealData.zusatzstoffeIds ? mealData.zusatzstoffeIds.split(',').map((id) => parseInt(id)) : [],
+		features: mealData.gerichtmerkmaleIds ? mealData.gerichtmerkmaleIds.split(',').map((id) => parseInt(id)) : [],
+		sustainability: {
+			co2: zusatzinformationen.sustainability?.co2?.co2Value ?? null,
+		},
+		canteen: {
+			id: canteenInfo.id,
+			name: canteenInfo.titel,
+			hash: hashing.cyrb53(canteenInfo.titel),
+			displayName: canteenInfo.anzeigename,
+			validFrom: canteenInfo.gueltigVon,
+			validTo: canteenInfo.gueltigBis,
+			orderInApp: canteenInfo.reihenfolgeInApp,
+			outletId: canteenInfo.outletID,
+			locationInfo: canteenInfo.locationInfo,
+			orderInfo: canteenInfo.orderInfo,
+		},
+	};
+}
+
+function extractNutritionalInfo(zusatzinformationen: Zusatzinformationen) {
+	return {
+		kj: zusatzinformationen.nwkjInteger,
+		kcal: zusatzinformationen.nwkcalInteger,
+		fat: zusatzinformationen.nwfettDecimal1,
+		saturatedFat: zusatzinformationen.nwfettsaeurenDecimal1,
+		carbohydrates: zusatzinformationen.nwkohlehydrateDecimal1,
+		sugar: zusatzinformationen.nwzuckerDecimal1,
+		protein: zusatzinformationen.nweiweissDecimal1,
+		salt: zusatzinformationen.nwsalzDecimal1,
+	};
+}
+
+function getStudentPrice(mealData: SpeiseplanGerichtData) {
+	const discount = STUDENT_DISCOUNT_INDEX.find((index) => index.categories.includes(mealData.speiseplanAdvancedGericht.gerichtkategorieID));
+	if (!discount) return null;
+
+	if (discount.discount > 0) return discount.discount;
+	else if (discount.discount < 0) return mealData.zusatzinformationen.mitarbeiterpreisDecimal2 + discount.discount;
+
+	return null;
+}
+
+interface DetailedMeal {
+	id: number;
+    plu: string;
+	title: string;
+	hash: number;
+	alternativeTitle: string;
+	categoryId: number;
+	imageUrl: string;
+	price: number;
+	studentPrice: number | null;
+	guestPrice: number | null;
+	date: string;
+	nutritionalInfo: NutritionalInfo;
+	allergens: number[];
+	additives: number[];
+	features: number[];
+	sustainability: {
+		co2: number | null;
+	};
+	canteen: {
+		id: number;
+		name: string;
+		hash: number;
+		displayName: string;
+		validFrom: string;
+		validTo: string;
+		orderInApp: number;
+		outletId: number;
+		locationInfo: {
+			id: number;
+			name: string;
+		};
+		orderInfo: {
+			orderAllowed: boolean;
+			preOrderAllowed: boolean;
+			instantOrderAllowed: boolean;
+			shippingAllowed: boolean;
+			deliveryAssortment: boolean;
+			instantOrderMinimumOrderValue: number | null;
+			preOrderMinimumOrderValue: number | null;
+			shippingOrderMinimumOrderValue: number | null;
+			shippingCostFlatrate: number | null;
+			shippingCostThreshold: number | null;
+			postalCodeVerification: boolean;
+			reusableProvider: boolean;
+			reusableProviderId: number | null;
+			allowedOrderProcesses: unknown[];
+			scan2go: boolean;
+		};
+	};
+}
+
+interface NutritionalInfo {
+	kj: number;
+	kcal: number;
+	fat: number;
+	saturatedFat: number;
+	carbohydrates: number;
+	sugar: number;
+	protein: number;
+	salt: number;
 }
 
 /** The cafeteria a meal is located in */
 export class MealLocation {
-    readonly name: string;
-    readonly mealsApiKey: string;
-    private constructor(name: string, mealsApiKey: string) {
-        this.name = name;
-        this.mealsApiKey = mealsApiKey;
-    }
+	readonly name: string;
+	readonly mealsApiKey: string;
+	private constructor(name: string, mealsApiKey: string) {
+		this.name = name;
+		this.mealsApiKey = mealsApiKey;
+	}
 
-    static Elbe = new MealLocation("Elbe", "Elbe");
-    static Steelrunner = new MealLocation("Steelrunner", "Steelrunner");
-    static Bonprix = new MealLocation("Bonprix", "bonprix");
-    static Boulevard = new MealLocation("Boulevard", "Bistro Boulevard Mittag");
+	static Elbe = new MealLocation('Elbe', 'Elbe');
+	static Steelrunner = new MealLocation('Steelrunner', 'Steelrunner');
+	static Bonprix = new MealLocation('Bonprix', 'bonprix');
+	static Boulevard = new MealLocation('Boulevard', 'Bistro Boulevard Mittag');
 }
 
 const MealsAPI = { getMeals };
 export default MealsAPI;
-export type { Meal };
+export type { DetailedMeal, NutritionalInfo };
