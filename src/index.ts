@@ -1,14 +1,40 @@
-import { KOCHWERK_MAIN_JS, KOCHWERK_MEALS_ENDPOINT, KOCHWERK_TOKEN_REGEX, STUDENT_DISCOUNT_INDEX } from './constants';
-import { ResponseData, SpeiseplanAdvanced, SpeiseplanGerichtData, SpeiseplanLocation, Zusatzinformationen } from './speiseplan';
+import { getMenu, ResponseData, SpeiseplanAdvanced, SpeiseplanGerichtData, SpeiseplanLocation, Zusatzinformationen } from './speiseplan';
 import hashing from './utils/hashing';
 
-async function getKochwerkToken() {
-	const req = await fetch(KOCHWERK_MAIN_JS);
-	const body = await req.text();
-	const match = body.match(KOCHWERK_TOKEN_REGEX);
-	if (match == null) return null;
-	return match[1];
-}
+const STUDENT_DISCOUNT_INDEX: Array<{ categories: number[]; discount: number }> = [
+	{
+		categories: [187, 201],
+		discount: 1.6,
+	},
+	{
+		categories: [243],
+		discount: 4.7,
+	},
+	{
+		categories: [242],
+		discount: 4.1,
+	},
+	{
+		categories: [235],
+		discount: 0.75,
+	},
+	{
+		categories: [1490],
+		discount: 1.6,
+	},
+	{
+		categories: [249],
+		discount: 3.7,
+	},
+	{
+		categories: [251],
+		discount: -1.0,
+	},
+	{
+		categories: [247],
+		discount: 0.75,
+	},
+];
 
 /** Get meals for a specified time periode
  *  @param start The start of the periode
@@ -16,11 +42,7 @@ async function getKochwerkToken() {
  *  @param mealLocation The cafeteria or an array of cafeterias
  */
 async function getMeals(start: Date, end: Date, mealLocation?: MealLocation | MealLocation[] | undefined) {
-	const token = await getKochwerkToken();
-	if (token == null) throw new Error('Could not fetch token');
-
-	const req = await fetch(KOCHWERK_MEALS_ENDPOINT + '&token=' + token, { headers: { Referer: 'test' } });
-	const body = (await req.json()) as ResponseData;
+	const body = await getMenu();
 	const meals = extractMeals(body.content, mealLocation, start, end);
 	return meals;
 }
@@ -112,7 +134,7 @@ function getStudentPrice(mealData: SpeiseplanGerichtData) {
 
 interface DetailedMeal {
 	id: number;
-    plu?: string | null;
+	plu?: string | null;
 	title: string;
 	hash: number;
 	alternativeTitle: string;
