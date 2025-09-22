@@ -148,40 +148,48 @@ interface DetailedMeal {
 	allergens: number[];
 	additives: number[];
 	features: number[];
-	sustainability: {
-		co2: number | null;
-	};
-	canteen: {
-		id: number;
-		name: string;
-		hash: number;
-		displayName: string;
-		validFrom: string;
-		validTo: string;
-		orderInApp: number;
-		outletId: number;
-		locationInfo: {
-			id: number;
-			name: string;
-		};
-		orderInfo: {
-			orderAllowed: boolean;
-			preOrderAllowed: boolean;
-			instantOrderAllowed: boolean;
-			shippingAllowed: boolean;
-			deliveryAssortment: boolean;
-			instantOrderMinimumOrderValue: number | null;
-			preOrderMinimumOrderValue: number | null;
-			shippingOrderMinimumOrderValue: number | null;
-			shippingCostFlatrate: number | null;
-			shippingCostThreshold: number | null;
-			postalCodeVerification: boolean;
-			reusableProvider: boolean;
-			reusableProviderId: number | null;
-			allowedOrderProcesses: unknown[];
-			scan2go: boolean;
-		};
-	};
+	sustainability: Sustainability;
+	canteen: Canteen;
+}
+
+interface Sustainability {
+	co2: number | null;
+}
+
+interface Canteen {
+	id: number;
+	name: string;
+	hash: number;
+	displayName: string;
+	validFrom: string;
+	validTo: string;
+	orderInApp: number;
+	outletId: number;
+	locationInfo: LocationInfo;
+	orderInfo: OrderInfo;
+}
+
+interface OrderInfo {
+	orderAllowed: boolean;
+	preOrderAllowed: boolean;
+	instantOrderAllowed: boolean;
+	shippingAllowed: boolean;
+	deliveryAssortment: boolean;
+	instantOrderMinimumOrderValue: number | null;
+	preOrderMinimumOrderValue: number | null;
+	shippingOrderMinimumOrderValue: number | null;
+	shippingCostFlatrate: number | null;
+	shippingCostThreshold: number | null;
+	postalCodeVerification: boolean;
+	reusableProvider: boolean;
+	reusableProviderId: number | null;
+	allowedOrderProcesses: unknown[];
+	scan2go: boolean;
+}
+
+interface LocationInfo {
+	id: number;
+	name: string;
 }
 
 interface NutritionalInfo {
@@ -212,4 +220,4 @@ export class MealLocation {
 
 const MealsAPI = { getMeals };
 export default MealsAPI;
-export type { DetailedMeal, NutritionalInfo };
+export type { DetailedMeal, NutritionalInfo, LocationInfo, OrderInfo, Canteen, Sustainability };
