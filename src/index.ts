@@ -39,40 +39,102 @@ const STUDENT_DISCOUNT_INDEX: Array<{ categories: number[]; discount: number }> 
 /** Get meals for a specified time periode
  *  @param start The start of the periode
  *  @param end The end of the periode
- *  @param mealLocation The cafeteria or an array of cafeterias
+ *  @param options The cafeteria or an array of cafeterias and the format of the result
  */
-async function getMeals(start: Date, end: Date, mealLocation?: MealLocation | MealLocation[] | undefined) {
+async function getMeals(
+	start: Date,
+	end: Date,
+	options: { mealLocation?: MealLocation | MealLocation[]; format: 'byMeal' }
+): Promise<DetailedMeal[]>;
+async function getMeals(
+	start: Date,
+	end: Date,
+	options: { mealLocation?: MealLocation | MealLocation[]; format: 'byLocation' }
+): Promise<CanteenWithMeals[]>;
+async function getMeals(
+	start: Date,
+	end: Date,
+	options: { mealLocation?: MealLocation | MealLocation[]; format: 'byMeal' | 'byLocation' } = { format: 'byMeal' }
+): Promise<DetailedMeal[] | CanteenWithMeals[]> {
 	const body = await getMenu();
-	const meals = extractMeals(body.content, mealLocation, start, end);
-	return meals;
+	if (options.format === 'byLocation') {
+		return extractMeals(body.content, { ...options, format: 'byLocation', start, end });
+	} else {
+		return extractMeals(body.content, { ...options, format: 'byMeal', start, end });
+	}
 }
 
-function extractMeals(data: SpeiseplanLocation[], mealLocation: MealLocation | MealLocation[] | undefined, start: Date, end: Date) {
+function extractMeals(
+	data: SpeiseplanLocation[],
+	options: { mealLocation?: MealLocation | MealLocation[]; format: 'byMeal'; start: Date; end: Date }
+): DetailedMeal[];
+function extractMeals(
+	data: SpeiseplanLocation[],
+	options: { mealLocation?: MealLocation | MealLocation[]; format: 'byLocation'; start: Date; end: Date }
+): CanteenWithMeals[];
+function extractMeals(
+	data: SpeiseplanLocation[],
+	options: { mealLocation?: MealLocation | MealLocation[]; format?: 'byMeal' | 'byLocation'; start: Date; end: Date }
+): DetailedMeal[] | CanteenWithMeals[] {
 	// Initialize an array to hold all meals from all locations
-	const allMeals: DetailedMeal[] = [];
+	const allMeals: DetailedMealWithCanteen[] = [];
+	const allCanteens: CanteenWithMeals[] = [];
 
 	// Iterate through each location in the content array
 	for (const location of data) {
-		if (mealLocation instanceof MealLocation) {
-			if (location.speiseplanAdvanced.titel != mealLocation.mealsApiKey) continue;
-		} else if (mealLocation != undefined) {
-			if (!(mealLocation as MealLocation[]).some((mealLocation) => mealLocation.mealsApiKey == location.speiseplanAdvanced.titel)) continue;
+		if (options.mealLocation instanceof MealLocation) {
+			if (location.speiseplanAdvanced.titel != options.mealLocation.mealsApiKey) continue;
+		} else if (options.mealLocation != undefined) {
+			if (!(options.mealLocation as MealLocation[]).some((mealLocation) => mealLocation.mealsApiKey == location.speiseplanAdvanced.titel))
+				continue;
 		}
 		const speiseplanGerichtData = location.speiseplanGerichtData;
 		if (!Array.isArray(speiseplanGerichtData)) continue;
+
+		const canteen = transformCanteen(location.speiseplanAdvanced);
+		if (options.format === 'byLocation') {
+			allCanteens.push({ ...canteen, meals: [] });
+		}
+
 		for (const meal of speiseplanGerichtData) {
 			const mealDate = new Date(meal.speiseplanAdvancedGericht.datum);
-			if (mealDate.getFullYear() < start.getFullYear() || mealDate.getFullYear() > end.getFullYear()) continue;
-			if (mealDate.getMonth() < start.getMonth() || mealDate.getMonth() > end.getMonth()) continue;
-			if (mealDate.getDate() < start.getDate() || mealDate.getDate() > end.getDate()) continue;
-			allMeals.push(transformMeal(meal, location.speiseplanAdvanced));
+			if (mealDate.getFullYear() < options.start.getFullYear() || mealDate.getFullYear() > options.end.getFullYear()) continue;
+			if (mealDate.getMonth() < options.start.getMonth() || mealDate.getMonth() > options.end.getMonth()) continue;
+			if (mealDate.getDate() < options.start.getDate() || mealDate.getDate() > options.end.getDate()) continue;
+
+			if (options.format === 'byLocation') {
+				allCanteens[allCanteens.length - 1].meals.push(transformMeal(meal));
+			} else {
+				allMeals.push(transformMeal(meal, location.speiseplanAdvanced));
+			}
 		}
 	}
 
-	return allMeals;
+	if (options.format === 'byLocation') {
+		return allCanteens;
+	} else {
+		return allMeals;
+	}
 }
 
-function transformMeal(mealData: SpeiseplanGerichtData, canteenInfo: SpeiseplanAdvanced): DetailedMeal {
+function transformCanteen(canteenInfo: SpeiseplanAdvanced): Canteen {
+	return {
+		id: canteenInfo.id,
+		name: canteenInfo.titel,
+		hash: hashing.cyrb53(canteenInfo.titel),
+		displayName: canteenInfo.anzeigename,
+		validFrom: canteenInfo.gueltigVon,
+		validTo: canteenInfo.gueltigBis,
+		orderInApp: canteenInfo.reihenfolgeInApp,
+		outletId: canteenInfo.outletID,
+		locationInfo: canteenInfo.locationInfo,
+		orderInfo: canteenInfo.orderInfo,
+	};
+}
+
+function transformMeal(mealData: SpeiseplanGerichtData): DetailedMeal;
+function transformMeal(mealData: SpeiseplanGerichtData, canteenInfo: SpeiseplanAdvanced): DetailedMealWithCanteen;
+function transformMeal(mealData: SpeiseplanGerichtData, canteenInfo?: SpeiseplanAdvanced): DetailedMeal | DetailedMealWithCanteen {
 	const { speiseplanAdvancedGericht, zusatzinformationen } = mealData;
 
 	return {
@@ -94,18 +156,7 @@ function transformMeal(mealData: SpeiseplanGerichtData, canteenInfo: SpeiseplanA
 		sustainability: {
 			co2: zusatzinformationen.sustainability?.co2?.co2Value ?? null,
 		},
-		canteen: {
-			id: canteenInfo.id,
-			name: canteenInfo.titel,
-			hash: hashing.cyrb53(canteenInfo.titel),
-			displayName: canteenInfo.anzeigename,
-			validFrom: canteenInfo.gueltigVon,
-			validTo: canteenInfo.gueltigBis,
-			orderInApp: canteenInfo.reihenfolgeInApp,
-			outletId: canteenInfo.outletID,
-			locationInfo: canteenInfo.locationInfo,
-			orderInfo: canteenInfo.orderInfo,
-		},
+		...(canteenInfo ? { canteen: transformCanteen(canteenInfo) } : {}),
 	};
 }
 
@@ -149,8 +200,9 @@ interface DetailedMeal {
 	additives: number[];
 	features: number[];
 	sustainability: Sustainability;
-	canteen: Canteen;
 }
+
+type DetailedMealWithCanteen = DetailedMeal & { canteen: Canteen };
 
 interface Sustainability {
 	co2: number | null;
@@ -168,6 +220,8 @@ interface Canteen {
 	locationInfo: LocationInfo;
 	orderInfo: OrderInfo;
 }
+
+type CanteenWithMeals = Canteen & { meals: DetailedMeal[] };
 
 interface OrderInfo {
 	orderAllowed: boolean;
