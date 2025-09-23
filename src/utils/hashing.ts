@@ -1,4 +1,4 @@
-const cyrb53 = (str: string, seed = 0) => {
+const cyrb53 = (str: string, seed = 0): bigint => {
 	let h1 = 0xdeadbeef ^ seed,
 		h2 = 0x41c6ce57 ^ seed;
 	for (let i = 0, ch; i < str.length; i++) {

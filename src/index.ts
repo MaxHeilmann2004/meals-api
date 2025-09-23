@@ -187,7 +187,7 @@ interface DetailedMeal {
 	id: number;
 	plu?: string | null;
 	title: string;
-	hash: BigInt;
+	hash: bigint;
 	alternativeTitle: string;
 	categoryId: number;
 	imageUrl: string;
@@ -211,7 +211,7 @@ interface Sustainability {
 interface Canteen {
 	id: number;
 	name: string;
-	hash: BigInt;
+	hash: bigint;
 	displayName: string;
 	validFrom: string;
 	validTo: string;
