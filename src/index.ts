@@ -45,7 +45,7 @@ async function getMeals(
 	start: Date,
 	end: Date,
 	options: { mealLocation?: MealLocation | MealLocation[]; format: 'byMeal' }
-): Promise<DetailedMeal[]>;
+): Promise<DetailedMealWithCanteen[]>;
 async function getMeals(
 	start: Date,
 	end: Date,
