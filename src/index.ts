@@ -274,4 +274,4 @@ export class MealLocation {
 
 const MealsAPI = { getMeals };
 export default MealsAPI;
-export type { DetailedMeal, NutritionalInfo, LocationInfo, OrderInfo, Canteen, Sustainability };
+export type { DetailedMeal, NutritionalInfo, LocationInfo, OrderInfo, Canteen, Sustainability, CanteenWithMeals, DetailedMealWithCanteen };
