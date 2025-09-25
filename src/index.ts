@@ -121,7 +121,7 @@ function transformCanteen(canteenInfo: SpeiseplanAdvanced): Canteen {
 	return {
 		id: canteenInfo.id,
 		name: canteenInfo.titel,
-		hash: hashing.cyrb53(canteenInfo.titel),
+		hash: hashing.cyrb53(canteenInfo.titel).toString(),
 		displayName: canteenInfo.anzeigename,
 		validFrom: canteenInfo.gueltigVon,
 		validTo: canteenInfo.gueltigBis,
@@ -141,7 +141,7 @@ function transformMeal(mealData: SpeiseplanGerichtData, canteenInfo?: Speiseplan
 		id: speiseplanAdvancedGericht.id,
 		plu: zusatzinformationen.plu,
 		title: speiseplanAdvancedGericht.gerichtname,
-		hash: hashing.cyrb53(speiseplanAdvancedGericht.gerichtname),
+		hash: hashing.cyrb53(speiseplanAdvancedGericht.gerichtname).toString(),
 		alternativeTitle: zusatzinformationen.gerichtnameAlternative,
 		categoryId: speiseplanAdvancedGericht.gerichtkategorieID,
 		imageUrl: zusatzinformationen.gerichtImage,
@@ -187,7 +187,7 @@ interface DetailedMeal {
 	id: number;
 	plu?: string | null;
 	title: string;
-	hash: bigint;
+	hash: string;
 	alternativeTitle: string;
 	categoryId: number;
 	imageUrl: string;
@@ -211,7 +211,7 @@ interface Sustainability {
 interface Canteen {
 	id: number;
 	name: string;
-	hash: bigint;
+	hash: string;
 	displayName: string;
 	validFrom: string;
 	validTo: string;
