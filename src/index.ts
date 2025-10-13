@@ -1,4 +1,4 @@
-import { getMenu, ResponseData, SpeiseplanAdvanced, SpeiseplanGerichtData, SpeiseplanLocation, Zusatzinformationen } from './speiseplan';
+import { getMenu, SpeiseplanAdvanced, SpeiseplanGerichtData, SpeiseplanLocation, Zusatzinformationen } from './speiseplan';
 import hashing from './utils/hashing';
 
 const STUDENT_DISCOUNT_INDEX: Array<{ categories: number[]; discount: number }> = [
@@ -121,7 +121,7 @@ function transformCanteen(canteenInfo: SpeiseplanAdvanced): Canteen {
 	return {
 		id: canteenInfo.id,
 		name: canteenInfo.titel,
-		hash: hashing.cyrb53(canteenInfo.titel).toString(),
+		hash: hashing.cyrb53(canteenInfo.titel.toLowerCase()).toString(),
 		displayName: canteenInfo.anzeigename,
 		validFrom: canteenInfo.gueltigVon,
 		validTo: canteenInfo.gueltigBis,
@@ -141,7 +141,7 @@ function transformMeal(mealData: SpeiseplanGerichtData, canteenInfo?: Speiseplan
 		id: speiseplanAdvancedGericht.id,
 		plu: zusatzinformationen.plu,
 		title: speiseplanAdvancedGericht.gerichtname,
-		hash: hashing.cyrb53(speiseplanAdvancedGericht.gerichtname).toString(),
+		hash: hashing.cyrb53(speiseplanAdvancedGericht.gerichtname.toLowerCase()).toString(),
 		alternativeTitle: zusatzinformationen.gerichtnameAlternative,
 		categoryId: speiseplanAdvancedGericht.gerichtkategorieID,
 		imageUrl: zusatzinformationen.gerichtImage,
@@ -274,4 +274,4 @@ export class MealLocation {
 
 const MealsAPI = { getMeals };
 export default MealsAPI;
-export type { DetailedMeal, NutritionalInfo, LocationInfo, OrderInfo, Canteen, Sustainability, CanteenWithMeals, DetailedMealWithCanteen };
+export type { Canteen, CanteenWithMeals, DetailedMeal, DetailedMealWithCanteen, LocationInfo, NutritionalInfo, OrderInfo, Sustainability };
