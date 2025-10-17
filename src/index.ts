@@ -272,6 +272,6 @@ export class MealLocation {
 	static Boulevard = new MealLocation('Boulevard', 'Bistro Boulevard Mittag');
 }
 
-const MealsAPI = { getMeals };
+const MealsAPI = { getMeals, hashString: hashing.cyrb53 };
 export default MealsAPI;
 export type { Canteen, CanteenWithMeals, DetailedMeal, DetailedMealWithCanteen, LocationInfo, NutritionalInfo, OrderInfo, Sustainability };
