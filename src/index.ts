@@ -42,39 +42,33 @@ const STUDENT_DISCOUNT_INDEX: Array<{ categories: number[]; discount: number }> 
  *  @param options The cafeteria or an array of cafeterias and the format of the result
  */
 async function getMeals(
-	start: Date,
-	end: Date,
-	options: { mealLocation?: MealLocation | MealLocation[]; format: 'byMeal' }
+	options?: { start?: Date; end?: Date; mealLocation?: MealLocation | MealLocation[]; format: 'byMeal' }
 ): Promise<DetailedMealWithCanteen[]>;
 async function getMeals(
-	start: Date,
-	end: Date,
-	options: { mealLocation?: MealLocation | MealLocation[]; format: 'byLocation' }
+	options?: { start?: Date; end?: Date; mealLocation?: MealLocation | MealLocation[]; format: 'byLocation' }
 ): Promise<CanteenWithMeals[]>;
 async function getMeals(
-	start: Date,
-	end: Date,
-	options: { mealLocation?: MealLocation | MealLocation[]; format: 'byMeal' | 'byLocation' } = { format: 'byMeal' }
+	options: { start?: Date; end?: Date; mealLocation?: MealLocation | MealLocation[]; format?: 'byMeal' | 'byLocation' } = { format: 'byMeal' }
 ): Promise<DetailedMeal[] | CanteenWithMeals[]> {
 	const body = await getMenu();
 	if (options.format === 'byLocation') {
-		return extractMeals(body.content, { ...options, format: 'byLocation', start, end });
+		return extractMeals(body.content, { ...options, format: 'byLocation' });
 	} else {
-		return extractMeals(body.content, { ...options, format: 'byMeal', start, end });
+		return extractMeals(body.content, { ...options, format: 'byMeal' });
 	}
 }
 
 function extractMeals(
 	data: SpeiseplanLocation[],
-	options: { mealLocation?: MealLocation | MealLocation[]; format: 'byMeal'; start: Date; end: Date }
+	options: { mealLocation?: MealLocation | MealLocation[]; format: 'byMeal'; start?: Date; end?: Date }
 ): DetailedMeal[];
 function extractMeals(
 	data: SpeiseplanLocation[],
-	options: { mealLocation?: MealLocation | MealLocation[]; format: 'byLocation'; start: Date; end: Date }
+	options: { mealLocation?: MealLocation | MealLocation[]; format: 'byLocation'; start?: Date; end?: Date }
 ): CanteenWithMeals[];
 function extractMeals(
 	data: SpeiseplanLocation[],
-	options: { mealLocation?: MealLocation | MealLocation[]; format?: 'byMeal' | 'byLocation'; start: Date; end: Date }
+	options: { mealLocation?: MealLocation | MealLocation[]; format?: 'byMeal' | 'byLocation'; start?: Date; end?: Date }
 ): DetailedMeal[] | CanteenWithMeals[] {
 	// Initialize an array to hold all meals from all locations
 	const allMeals: DetailedMealWithCanteen[] = [];
@@ -98,9 +92,8 @@ function extractMeals(
 
 		for (const meal of speiseplanGerichtData) {
 			const mealDate = new Date(meal.speiseplanAdvancedGericht.datum);
-			if (mealDate.getFullYear() < options.start.getFullYear() || mealDate.getFullYear() > options.end.getFullYear()) continue;
-			if (mealDate.getMonth() < options.start.getMonth() || mealDate.getMonth() > options.end.getMonth()) continue;
-			if (mealDate.getDate() < options.start.getDate() || mealDate.getDate() > options.end.getDate()) continue;
+			if (options.start && mealDate < options.start) continue;
+			if (options.end && mealDate > options.end) continue;
 
 			if (options.format === 'byLocation') {
 				allCanteens[allCanteens.length - 1].meals.push(transformMeal(meal));
