@@ -1,7 +1,6 @@
 import {
-	Additive,
-	Allergen,
-	Feature,
+	_Allergen,
+	Gerichtsmerkmal,
 	getAllAdditives,
 	getAllAllergens,
 	getAllFeatures,
@@ -10,6 +9,7 @@ import {
 	SpeiseplanGerichtData,
 	SpeiseplanLocation,
 	Zusatzinformationen,
+	Zusatzstoff,
 } from './speiseplan';
 import hashing from './utils/hashing';
 
@@ -96,32 +96,41 @@ async function getFeatures() {
 	return extractFeatures(body.content);
 }
 
-function extractFeatures(data: Feature[]) {
-	return data.map((feature) => ({
-		id: feature.id,
-		name: feature.name,
-		shortName: feature.kuerzel,
-		orderInApp: feature.reihenfolgeInApp,
-		rgbColor: feature.rgbColor,
-		showInOverview: feature.showInSpeiseplanOverview,
-		showInFilter: !feature.showNotInFilter,
-	}));
+function extractFeatures(data: Gerichtsmerkmal[]) {
+	return data.map(
+		(feature) =>
+			({
+				id: feature.id,
+				name: feature.name,
+				shortName: feature.kuerzel,
+				orderInApp: feature.reihenfolgeInApp,
+				rgbColor: feature.rgbColor,
+				showInOverview: feature.showInSpeiseplanOverview,
+				showInFilter: !feature.showNotInFilter,
+			} satisfies Feature)
+	);
 }
 
-function extractAllergens(data: Allergen[]) {
-	return data.map((allergen) => ({
-		id: allergen.id,
-		name: allergen.name,
-		shortName: allergen.kuerzel,
-	}));
+function extractAllergens(data: _Allergen[]) {
+	return data.map(
+		(allergen) =>
+			({
+				id: allergen.id,
+				name: allergen.name,
+				shortName: allergen.kuerzel,
+			} satisfies Allergen)
+	);
 }
 
-function extractAdditives(data: Additive[]) {
-	return data.map((additive) => ({
-		id: additive.id,
-		name: additive.name,
-		shortName: additive.kuerzel,
-	}));
+function extractAdditives(data: Zusatzstoff[]) {
+	return data.map(
+		(additive) =>
+			({
+				id: additive.id,
+				name: additive.name,
+				shortName: additive.kuerzel,
+			} satisfies Additive)
+	);
 }
 
 function extractMeals(
@@ -240,6 +249,28 @@ function getStudentPrice(mealData: SpeiseplanGerichtData) {
 	else if (discount.discount < 0) return mealData.zusatzinformationen.mitarbeiterpreisDecimal2 + discount.discount;
 
 	return null;
+}
+
+interface Additive {
+	id: number;
+	name: string;
+	shortName: string | null;
+}
+
+interface Allergen {
+	id: number;
+	name: string;
+	shortName: string | null;
+}
+
+interface Feature {
+	id: number;
+	name: string;
+	shortName: string | null;
+	orderInApp: number;
+	rgbColor: string | null;
+	showInOverview: boolean;
+	showInFilter: boolean;
 }
 
 interface DetailedMeal {

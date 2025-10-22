@@ -159,7 +159,7 @@ export type SpeiseplanAdvanced = {
 	pickupTimeInfo: unknown[]; // Replace with specific type if known
 };
 
-export interface Additive {
+export interface Zusatzstoff {
 	id: number;
 	name: string;
 	kuerzel: string;
@@ -171,7 +171,7 @@ export interface Additive {
 	timestampLog: string;
 }
 
-export interface Allergen {
+export interface _Allergen {
 	id: number;
 	name: string;
 	kuerzel: string;
@@ -180,7 +180,7 @@ export interface Allergen {
 	timestampLog: string;
 }
 
-export interface Feature {
+export interface Gerichtsmerkmal {
 	id: number;
 	name: string;
 	nameAlternative: string | null;
@@ -209,8 +209,8 @@ export interface KochwerkResponse<T> {
 
 export type MealResponseData = KochwerkResponse<SpeiseplanLocation[]>;
 
-export type AdditivesResponseData = KochwerkResponse<Additive[]>;
+export type AdditivesResponseData = KochwerkResponse<Zusatzstoff[]>;
 
-export type AllergensResponseData = KochwerkResponse<Allergen[]>;
+export type AllergensResponseData = KochwerkResponse<_Allergen[]>;
 
-export type FeaturesResponseData = KochwerkResponse<Feature[]>;
+export type FeaturesResponseData = KochwerkResponse<Gerichtsmerkmal[]>;
