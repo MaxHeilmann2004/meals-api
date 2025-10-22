@@ -1,23 +1,57 @@
-const KOCHWERK_MAIN_JS = 'https://kochwerk-web.webspeiseplan.de/index.js';
+const KOCHWERK_BASE = 'https://kochwerk-web.webspeiseplan.de';
+const KOCHWERK_MAIN_JS = `${KOCHWERK_BASE}/index.js`;
 const KOCHWERK_TOKEN_REGEX = /PROXY_TOKEN:"([A-Za-z0-9]+)"/;
+const KOCHWERK_API = 'https://kochwerk-web.webspeiseplan.de/index.php';
 const KOCHWERK_MEALS_ENDPOINT = 'https://kochwerk-web.webspeiseplan.de/index.php?model=menu&location=1800&languagetype=1';
+const KOCHWERK_REFERER = `${KOCHWERK_BASE}/menu`;
+const KOCHWERK_LOCATION = 1800;
+const KOCHWERK_LANG_DE = 1;
+
+function buildApiUrl(model: 'menu' | 'features' | 'allergens' | 'additives', token: string) {
+	const params = new URLSearchParams();
+	params.set('model', model);
+	params.set('location', KOCHWERK_LOCATION.toString());
+	params.set('languagetype', KOCHWERK_LANG_DE.toString());
+	params.set('token', token);
+	params.set('_', Date.now().toString());
+	return new URL(KOCHWERK_API);
+}
 
 export async function getKochwerkToken() {
 	const req = await fetch(KOCHWERK_MAIN_JS);
 	const body = await req.text();
 	const match = body.match(KOCHWERK_TOKEN_REGEX);
 	if (match == null) throw new Error('Could not extract token');
+	if (match[1] == null) throw new Error('Could not extract token');
 	return match[1];
 }
 
-export async function getMenu(): Promise<ResponseData> {
-	const token = await getKochwerkToken();
-	if (token == null) throw new Error('Could not fetch token');
-
-	const req = await fetch(KOCHWERK_MEALS_ENDPOINT + '&token=' + token + '&_=' + Date.now(), {
-		headers: { Referer: 'https://kochwerk-web.webspeiseplan.de/menu' },
+export async function getMenu(): Promise<MealResponseData> {
+	const req = await fetch(buildApiUrl('menu', await getKochwerkToken()), {
+		headers: { Referer: KOCHWERK_REFERER },
 	});
 	return await req.json();
+}
+
+export async function getAllFeatures(): Promise<FeaturesResponseData> {
+	const req = await fetch(buildApiUrl('features', await getKochwerkToken()), {
+		headers: { Referer: KOCHWERK_REFERER },
+	});
+	return await req.json();
+}
+
+export async function getAllAllergens(): Promise<AllergensResponseData> {
+	const req = await fetch(buildApiUrl('allergens', await getKochwerkToken()), {
+		headers: { Referer: KOCHWERK_REFERER },
+	});
+	return await req.json();
+}
+
+export async function getAllAdditives(): Promise<AdditivesResponseData> {
+	const req = await fetch(buildApiUrl('allergens', await getKochwerkToken()), {
+		headers: { Referer: KOCHWERK_REFERER },
+	});
+	return req.json();
 }
 
 export type Sustainability = {
@@ -125,12 +159,58 @@ export type SpeiseplanAdvanced = {
 	pickupTimeInfo: unknown[]; // Replace with specific type if known
 };
 
+export interface Additive {
+	id: number;
+	name: string;
+	kuerzel: string;
+	logoImage: null;
+	beschreibung: null;
+	zusatzstoffeID: number;
+	languageTypeID: number;
+	benutzerID: number;
+	timestampLog: string;
+}
+
+export interface Allergen {
+	id: number;
+	name: string;
+	kuerzel: string;
+	logoImage: string | null;
+	allergeneID: number;
+	timestampLog: string;
+}
+
+export interface Feature {
+	id: number;
+	name: string;
+	nameAlternative: string | null;
+	kuerzel: string;
+	logoImage: string | null;
+	rgbColor: string | null;
+	reihenfolgeInApp: number;
+	showInSpeiseplanOverview: boolean;
+	showNotInFilter: boolean;
+	beschreibung: string | null;
+	gerichtmerkmalID: number;
+	languageTypeID: number;
+	benutzerID: number;
+	timestampLog: string;
+}
+
 export type SpeiseplanLocation = {
 	speiseplanAdvanced: SpeiseplanAdvanced;
 	speiseplanGerichtData: SpeiseplanGerichtData[];
 };
 
-export type ResponseData = {
+export interface KochwerkResponse<T> {
 	success: boolean;
-	content: SpeiseplanLocation[];
-};
+	content: T;
+}
+
+export type MealResponseData = KochwerkResponse<SpeiseplanLocation[]>;
+
+export type AdditivesResponseData = KochwerkResponse<Additive[]>;
+
+export type AllergensResponseData = KochwerkResponse<Allergen[]>;
+
+export type FeaturesResponseData = KochwerkResponse<Feature[]>;

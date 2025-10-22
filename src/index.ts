@@ -1,4 +1,16 @@
-import { getMenu, SpeiseplanAdvanced, SpeiseplanGerichtData, SpeiseplanLocation, Zusatzinformationen } from './speiseplan';
+import {
+	Additive,
+	Allergen,
+	Feature,
+	getAllAdditives,
+	getAllAllergens,
+	getAllFeatures,
+	getMenu,
+	SpeiseplanAdvanced,
+	SpeiseplanGerichtData,
+	SpeiseplanLocation,
+	Zusatzinformationen,
+} from './speiseplan';
 import hashing from './utils/hashing';
 
 const STUDENT_DISCOUNT_INDEX: Array<{ categories: number[]; discount: number }> = [
@@ -41,14 +53,22 @@ const STUDENT_DISCOUNT_INDEX: Array<{ categories: number[]; discount: number }> 
  *  @param end The end of the periode
  *  @param options The cafeteria or an array of cafeterias and the format of the result
  */
+async function getMeals(options?: {
+	start?: Date;
+	end?: Date;
+	mealLocation?: MealLocation | MealLocation[];
+	format: 'byMeal';
+}): Promise<DetailedMealWithCanteen[]>;
+async function getMeals(options?: {
+	start?: Date;
+	end?: Date;
+	mealLocation?: MealLocation | MealLocation[];
+	format: 'byLocation';
+}): Promise<CanteenWithMeals[]>;
 async function getMeals(
-	options?: { start?: Date; end?: Date; mealLocation?: MealLocation | MealLocation[]; format: 'byMeal' }
-): Promise<DetailedMealWithCanteen[]>;
-async function getMeals(
-	options?: { start?: Date; end?: Date; mealLocation?: MealLocation | MealLocation[]; format: 'byLocation' }
-): Promise<CanteenWithMeals[]>;
-async function getMeals(
-	options: { start?: Date; end?: Date; mealLocation?: MealLocation | MealLocation[]; format?: 'byMeal' | 'byLocation' } = { format: 'byMeal' }
+	options: { start?: Date; end?: Date; mealLocation?: MealLocation | MealLocation[]; format?: 'byMeal' | 'byLocation' } = {
+		format: 'byMeal',
+	}
 ): Promise<DetailedMeal[] | CanteenWithMeals[]> {
 	const body = await getMenu();
 	if (options.format === 'byLocation') {
@@ -56,6 +76,52 @@ async function getMeals(
 	} else {
 		return extractMeals(body.content, { ...options, format: 'byMeal' });
 	}
+}
+
+/**
+ * Get all additives
+ */
+async function getAdditives() {
+	const body = await getAllAdditives();
+	return extractAdditives(body.content);
+}
+
+async function getAllergens() {
+	const body = await getAllAllergens();
+	return extractAllergens(body.content);
+}
+
+async function getFeatures() {
+	const body = await getAllFeatures();
+	return extractFeatures(body.content);
+}
+
+function extractFeatures(data: Feature[]) {
+	return data.map((feature) => ({
+		id: feature.id,
+		name: feature.name,
+		shortName: feature.kuerzel,
+		orderInApp: feature.reihenfolgeInApp,
+		rgbColor: feature.rgbColor,
+		showInOverview: feature.showInSpeiseplanOverview,
+		showInFilter: !feature.showNotInFilter,
+	}));
+}
+
+function extractAllergens(data: Allergen[]) {
+	return data.map((allergen) => ({
+		id: allergen.id,
+		name: allergen.name,
+		shortName: allergen.kuerzel,
+	}));
+}
+
+function extractAdditives(data: Additive[]) {
+	return data.map((additive) => ({
+		id: additive.id,
+		name: additive.name,
+		shortName: additive.kuerzel,
+	}));
 }
 
 function extractMeals(
