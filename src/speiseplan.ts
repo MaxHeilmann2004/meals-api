@@ -9,12 +9,12 @@ const KOCHWERK_LANG_DE = 1;
 
 function buildApiUrl(model: 'menu' | 'features' | 'allergens' | 'additives', token: string) {
 	const params = new URLSearchParams();
+	params.set('token', token);
 	params.set('model', model);
 	params.set('location', KOCHWERK_LOCATION.toString());
 	params.set('languagetype', KOCHWERK_LANG_DE.toString());
-	params.set('token', token);
 	params.set('_', Date.now().toString());
-	return new URL(KOCHWERK_API);
+	return new URL(KOCHWERK_API + '?' + params.toString());
 }
 
 export async function getKochwerkToken() {

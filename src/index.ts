@@ -365,15 +365,15 @@ export class MealLocation {
 const MealsAPI = { getMeals, hashString: hashing.cyrb53, getAdditives, getAllergens, getFeatures };
 export default MealsAPI;
 export type {
+	Additive,
+	Allergen,
 	Canteen,
 	CanteenWithMeals,
 	DetailedMeal,
 	DetailedMealWithCanteen,
+	Feature,
 	LocationInfo,
 	NutritionalInfo,
 	OrderInfo,
 	Sustainability,
-	Additive,
-	Allergen,
-	Feature,
 };
