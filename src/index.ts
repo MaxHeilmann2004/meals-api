@@ -207,23 +207,25 @@ function transformMeal(mealData: SpeiseplanGerichtData, canteenInfo?: Speiseplan
 
 	return {
 		id: speiseplanAdvancedGericht.id,
-		plu: zusatzinformationen.plu,
+		plu: zusatzinformationen?.plu ?? null,
 		title: speiseplanAdvancedGericht.gerichtname,
 		hash: hashing.cyrb53(speiseplanAdvancedGericht.gerichtname.toLowerCase()).toString(),
-		alternativeTitle: zusatzinformationen.gerichtnameAlternative,
+		alternativeTitle: zusatzinformationen?.gerichtnameAlternative ?? null,
 		categoryId: speiseplanAdvancedGericht.gerichtkategorieID,
-		imageUrl: zusatzinformationen.gerichtImage,
-		price: zusatzinformationen.mitarbeiterpreisDecimal2,
-		studentPrice: getStudentPrice(mealData),
-		guestPrice: zusatzinformationen.gaestepreisDecimal2,
+		imageUrl: zusatzinformationen?.gerichtImage ?? null,
+		price: zusatzinformationen?.mitarbeiterpreisDecimal2 ?? null,
+		studentPrice: getStudentPrice(mealData) ?? null,
+		guestPrice: zusatzinformationen?.gaestepreisDecimal2 ?? null,
 		date: speiseplanAdvancedGericht.datum,
-		nutritionalInfo: extractNutritionalInfo(zusatzinformationen),
+		nutritionalInfo: zusatzinformationen ? extractNutritionalInfo(zusatzinformationen) : null,
 		allergens: mealData.allergeneIds ? mealData.allergeneIds.split(',').map((id) => parseInt(id)) : [],
 		additives: mealData.zusatzstoffeIds ? mealData.zusatzstoffeIds.split(',').map((id) => parseInt(id)) : [],
 		features: mealData.gerichtmerkmaleIds ? mealData.gerichtmerkmaleIds.split(',').map((id) => parseInt(id)) : [],
-		sustainability: {
-			co2: zusatzinformationen.sustainability?.co2?.co2Value ?? null,
-		},
+		sustainability: zusatzinformationen
+			? {
+					co2: zusatzinformationen.sustainability?.co2?.co2Value ?? null,
+			  }
+			: null,
 		...(canteenInfo ? { canteen: transformCanteen(canteenInfo) } : {}),
 	};
 }
@@ -242,6 +244,8 @@ function extractNutritionalInfo(zusatzinformationen: Zusatzinformationen) {
 }
 
 function getStudentPrice(mealData: SpeiseplanGerichtData) {
+	if (!mealData.zusatzinformationen) return;
+
 	const discount = STUDENT_DISCOUNT_INDEX.find((index) => index.categories.includes(mealData.speiseplanAdvancedGericht.gerichtkategorieID));
 	if (!discount) return null;
 
@@ -275,21 +279,21 @@ interface Feature {
 
 interface DetailedMeal {
 	id: number;
-	plu?: string | null;
+	plu: string | null;
 	title: string;
 	hash: string;
-	alternativeTitle: string;
+	alternativeTitle: string | null;
 	categoryId: number;
-	imageUrl: string;
-	price: number;
+	imageUrl: string | null;
+	price: number | null;
 	studentPrice: number | null;
 	guestPrice: number | null;
 	date: string;
-	nutritionalInfo: NutritionalInfo;
+	nutritionalInfo: NutritionalInfo | null;
 	allergens: number[];
 	additives: number[];
 	features: number[];
-	sustainability: Sustainability;
+	sustainability: Sustainability | null;
 }
 
 type DetailedMealWithCanteen = DetailedMeal & { canteen: Canteen };

@@ -110,7 +110,7 @@ export type SpeiseplanAdvancedGericht = {
 
 export type SpeiseplanGerichtData = {
 	speiseplanAdvancedGericht: SpeiseplanAdvancedGericht;
-	zusatzinformationen: Zusatzinformationen;
+	zusatzinformationen: Zusatzinformationen | null;
 	allergeneIds: string;
 	zusatzstoffeIds: string | null;
 	gerichtmerkmaleIds: string;
