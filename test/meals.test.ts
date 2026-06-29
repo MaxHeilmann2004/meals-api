@@ -69,3 +69,12 @@ test("get meals for 'Elbe' for the whole current week", async () => {
 	const mealsElbe = await MealsAPI.getMeals(monday, friday, MealLocation.Elbe);
 	expect(mealsElbe.length).toBeGreaterThan(0);
 });
+
+test("get outlet capacity for canteen outlet id 4", async () => {
+	const capacity = await MealsAPI.getOutletCapacity(4);
+
+	expect(capacity).toBeDefined();
+	expect(capacity.currentData).toBeDefined();
+	expect(capacity.historicalData).toBeDefined();
+	expect(Array.isArray(capacity.historicalData.values)).toBe(true);
+});

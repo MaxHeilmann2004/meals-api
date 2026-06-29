@@ -7,12 +7,15 @@ const KOCHWERK_REFERER = `${KOCHWERK_BASE}/menu`;
 const KOCHWERK_LOCATION = 1800;
 const KOCHWERK_LANG_DE = 1;
 
-function buildApiUrl(model: 'menu' | 'features' | 'allergens' | 'additives', token: string) {
+function buildApiUrl(model: 'menu' | 'features' | 'allergens' | 'additives' | 'capacityOutlet', token: string, outlet?: number) {
 	const params = new URLSearchParams();
 	params.set('token', token);
 	params.set('model', model);
 	params.set('location', KOCHWERK_LOCATION.toString());
 	params.set('languagetype', KOCHWERK_LANG_DE.toString());
+	if (outlet !== undefined) {
+		params.set('outlet', outlet.toString());
+	}
 	params.set('_', Date.now().toString());
 	return new URL(KOCHWERK_API + '?' + params.toString());
 }
@@ -49,6 +52,13 @@ export async function getAllAllergens(): Promise<AllergensResponseData> {
 
 export async function getAllAdditives(): Promise<AdditivesResponseData> {
 	const req = await fetch(buildApiUrl('allergens', await getKochwerkToken()), {
+		headers: { Referer: KOCHWERK_REFERER },
+	});
+	return req.json();
+}
+
+export async function getCapacityOutlet(outletId: number): Promise<CapacityOutletResponseData> {
+	const req = await fetch(buildApiUrl('capacityOutlet', await getKochwerkToken(), outletId), {
 		headers: { Referer: KOCHWERK_REFERER },
 	});
 	return req.json();
@@ -207,6 +217,43 @@ export interface KochwerkResponse<T> {
 	content: T;
 }
 
+export interface CapacityOutletConfiguration {
+	maxPersonsCount: number;
+	personsCountThreshold: number;
+	goPictureURL: string;
+	stopPictureURL: string;
+	showTextualPersonsCount: boolean;
+	lowSignalColor: string | null;
+	lowSignalLimitValue: number;
+	middleSignalColor: string | null;
+	middleSignalLimitValue: number;
+	highSignalColor: string | null;
+	highSignalLimitValue: number;
+}
+
+export interface CapacityOutletCurrentData {
+	valueRelative: number;
+	unitValueRelative: string;
+	valueAbsolute: number;
+	unitValueAbsolute: string;
+}
+
+export interface CapacityOutletHistoricalValue {
+	value: number;
+	timestamp: string;
+}
+
+export interface CapacityOutletHistoricalData {
+	comparisonDay: string;
+	values: CapacityOutletHistoricalValue[];
+}
+
+export interface CapacityOutletContent {
+	configuration: CapacityOutletConfiguration;
+	currentData: CapacityOutletCurrentData;
+	historicalData: CapacityOutletHistoricalData;
+}
+
 export type MealResponseData = KochwerkResponse<SpeiseplanLocation[]>;
 
 export type AdditivesResponseData = KochwerkResponse<Zusatzstoff[]>;
@@ -214,3 +261,5 @@ export type AdditivesResponseData = KochwerkResponse<Zusatzstoff[]>;
 export type AllergensResponseData = KochwerkResponse<_Allergen[]>;
 
 export type FeaturesResponseData = KochwerkResponse<Gerichtsmerkmal[]>;
+
+export type CapacityOutletResponseData = KochwerkResponse<CapacityOutletContent>;

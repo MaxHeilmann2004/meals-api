@@ -1,8 +1,12 @@
 import {
 	_Allergen,
+	CapacityOutletContent,
+	CapacityOutletCurrentData,
+	CapacityOutletHistoricalValue,
 	Gerichtsmerkmal,
 	getAllAdditives,
 	getAllAllergens,
+	getCapacityOutlet,
 	getAllFeatures,
 	getMenu,
 	SpeiseplanAdvanced,
@@ -94,6 +98,42 @@ async function getAllergens() {
 async function getFeatures() {
 	const body = await getAllFeatures();
 	return extractFeatures(body.content);
+}
+
+async function getOutletCapacity(outletId: number): Promise<OutletCapacity> {
+	const body = await getCapacityOutlet(outletId);
+	if (!body.success) {
+		throw new Error(`Failed to fetch outlet capacity for outlet ${outletId}`);
+	}
+
+	return transformOutletCapacity(body.content);
+}
+
+function transformOutletCapacity(data: CapacityOutletContent): OutletCapacity {
+	return {
+		configuration: data.configuration,
+		currentData: transformCurrentData(data.currentData),
+		historicalData: {
+			comparisonDay: data.historicalData.comparisonDay,
+			values: data.historicalData.values.map(transformHistoricalValue),
+		},
+	};
+}
+
+function transformCurrentData(data: CapacityOutletCurrentData): OutletCapacityCurrentData {
+	return {
+		valueRelative: data.valueRelative,
+		unitValueRelative: data.unitValueRelative,
+		valueAbsolute: data.valueAbsolute,
+		unitValueAbsolute: data.unitValueAbsolute,
+	};
+}
+
+function transformHistoricalValue(value: CapacityOutletHistoricalValue): OutletCapacityHistoricalValue {
+	return {
+		value: value.value,
+		timestamp: value.timestamp,
+	};
 }
 
 function extractFeatures(data: Gerichtsmerkmal[]) {
@@ -351,6 +391,27 @@ interface NutritionalInfo {
 	salt: number;
 }
 
+interface OutletCapacityCurrentData {
+	valueRelative: number;
+	unitValueRelative: string;
+	valueAbsolute: number;
+	unitValueAbsolute: string;
+}
+
+interface OutletCapacityHistoricalValue {
+	value: number;
+	timestamp: string;
+}
+
+interface OutletCapacity {
+	configuration: CapacityOutletContent['configuration'];
+	currentData: OutletCapacityCurrentData;
+	historicalData: {
+		comparisonDay: string;
+		values: OutletCapacityHistoricalValue[];
+	};
+}
+
 /** The cafeteria a meal is located in */
 export class MealLocation {
 	readonly name: string;
@@ -366,7 +427,7 @@ export class MealLocation {
 	static Boulevard = new MealLocation('Boulevard', 'Bistro Boulevard Mittag');
 }
 
-const MealsAPI = { getMeals, hashString: hashing.cyrb53, getAdditives, getAllergens, getFeatures };
+const MealsAPI = { getMeals, hashString: hashing.cyrb53, getAdditives, getAllergens, getFeatures, getOutletCapacity };
 export default MealsAPI;
 export type {
 	Additive,
@@ -378,6 +439,9 @@ export type {
 	Feature,
 	LocationInfo,
 	NutritionalInfo,
+	OutletCapacity,
+	OutletCapacityCurrentData,
+	OutletCapacityHistoricalValue,
 	OrderInfo,
 	Sustainability,
 };
