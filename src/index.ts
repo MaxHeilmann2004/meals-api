@@ -197,6 +197,7 @@ function extractMeals(
 			if (!(options.mealLocation as MealLocation[]).some((mealLocation) => mealLocation.mealsApiKey == location.speiseplanAdvanced.titel))
 				continue;
 		}
+		if (!location.speiseplanAdvanced.aktiv) continue;
 		const speiseplanGerichtData = location.speiseplanGerichtData;
 		if (!Array.isArray(speiseplanGerichtData)) continue;
 
@@ -206,6 +207,7 @@ function extractMeals(
 		}
 
 		for (const meal of speiseplanGerichtData) {
+			if (!meal.speiseplanAdvancedGericht.aktiv) continue;
 			const mealDate = new Date(meal.speiseplanAdvancedGericht.datum);
 			if (options.start && mealDate < options.start) continue;
 			if (options.end && mealDate > options.end) continue;
