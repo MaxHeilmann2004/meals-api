@@ -197,7 +197,6 @@ function extractMeals(
 			if (!(options.mealLocation as MealLocation[]).some((mealLocation) => mealLocation.mealsApiKey == location.speiseplanAdvanced.titel))
 				continue;
 		}
-		if (!location.speiseplanAdvanced.aktiv) continue;
 		const speiseplanGerichtData = location.speiseplanGerichtData;
 		if (!Array.isArray(speiseplanGerichtData)) continue;
 
@@ -207,7 +206,6 @@ function extractMeals(
 		}
 
 		for (const meal of speiseplanGerichtData) {
-			if (!meal.speiseplanAdvancedGericht.aktiv) continue;
 			const mealDate = new Date(meal.speiseplanAdvancedGericht.datum);
 			if (options.start && mealDate < options.start) continue;
 			if (options.end && mealDate > options.end) continue;
@@ -237,6 +235,7 @@ function transformCanteen(canteenInfo: SpeiseplanAdvanced): Canteen {
 		validTo: canteenInfo.gueltigBis,
 		orderInApp: canteenInfo.reihenfolgeInApp,
 		outletId: canteenInfo.outletID,
+		isActive: canteenInfo.aktiv,
 		locationInfo: canteenInfo.locationInfo,
 		orderInfo: canteenInfo.orderInfo,
 	};
@@ -258,6 +257,7 @@ function transformMeal(mealData: SpeiseplanGerichtData, canteenInfo?: Speiseplan
 		price: zusatzinformationen?.mitarbeiterpreisDecimal2 ?? null,
 		studentPrice: getStudentPrice(mealData) ?? null,
 		guestPrice: zusatzinformationen?.gaestepreisDecimal2 ?? null,
+		isActive: speiseplanAdvancedGericht.aktiv,
 		date: speiseplanAdvancedGericht.datum,
 		nutritionalInfo: zusatzinformationen ? extractNutritionalInfo(zusatzinformationen) : null,
 		allergens: mealData.allergeneIds ? mealData.allergeneIds.split(',').map((id) => parseInt(id)) : [],
@@ -330,6 +330,7 @@ interface DetailedMeal {
 	price: number | null;
 	studentPrice: number | null;
 	guestPrice: number | null;
+	isActive: boolean;
 	date: string;
 	nutritionalInfo: NutritionalInfo | null;
 	allergens: number[];
@@ -353,6 +354,7 @@ interface Canteen {
 	validTo: string;
 	orderInApp: number;
 	outletId: number;
+	isActive: boolean;
 	locationInfo: LocationInfo;
 	orderInfo: OrderInfo;
 }

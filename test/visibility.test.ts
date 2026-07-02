@@ -84,22 +84,33 @@ function createLocation(canteenId: number, name: string, active: boolean, meals:
 	};
 }
 
-test('filters inactive meals and inactive canteens from source payload', async () => {
+test('keeps inactive meals and inactive canteens and exposes activity flags', async () => {
 	mockedGetMenu.mockResolvedValue({
 		success: true,
 		content: [
 			createLocation(8, 'Elbe', true, [createMeal(1, 'Visible Meal', true), createMeal(2, 'Hidden Meal', false)]),
 			createLocation(9, 'Inactive Canteen', false, [createMeal(3, 'Should Not Appear', true)]),
 		],
-	} as Awaited<ReturnType<typeof getMenu>>);
+	} as unknown as Awaited<ReturnType<typeof getMenu>>);
 
 	const meals = await MealsAPI.getMeals({ format: 'byMeal' });
-	expect(meals).toHaveLength(1);
+	expect(meals).toHaveLength(3);
 	expect(meals[0]?.title).toBe('Visible Meal');
+	expect(meals[0]?.isActive).toBe(true);
+	expect(meals[1]?.title).toBe('Hidden Meal');
+	expect(meals[1]?.isActive).toBe(false);
+	expect(meals[2]?.title).toBe('Should Not Appear');
+	expect(meals[2]?.canteen.isActive).toBe(false);
 
 	const canteens = await MealsAPI.getMeals({ format: 'byLocation' });
-	expect(canteens).toHaveLength(1);
+	expect(canteens).toHaveLength(2);
 	expect(canteens[0]?.name).toBe('Elbe');
-	expect(canteens[0]?.meals).toHaveLength(1);
+	expect(canteens[0]?.isActive).toBe(true);
+	expect(canteens[0]?.meals).toHaveLength(2);
 	expect(canteens[0]?.meals[0]?.title).toBe('Visible Meal');
+	expect(canteens[0]?.meals[1]?.title).toBe('Hidden Meal');
+	expect(canteens[0]?.meals[1]?.isActive).toBe(false);
+	expect(canteens[1]?.name).toBe('Inactive Canteen');
+	expect(canteens[1]?.isActive).toBe(false);
+	expect(canteens[1]?.meals).toHaveLength(1);
 });
