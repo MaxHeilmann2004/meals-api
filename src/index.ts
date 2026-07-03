@@ -139,37 +139,37 @@ function transformHistoricalValue(value: CapacityOutletHistoricalValue): OutletC
 function extractFeatures(data: Gerichtsmerkmal[]) {
 	return data.map(
 		(feature) =>
-			({
-				id: feature.id,
-				name: feature.name,
-				shortName: feature.kuerzel,
-				orderInApp: feature.reihenfolgeInApp,
-				rgbColor: feature.rgbColor,
-				showInOverview: feature.showInSpeiseplanOverview,
-				showInFilter: !feature.showNotInFilter,
-			} satisfies Feature)
+		({
+			id: feature.id,
+			name: feature.name,
+			shortName: feature.kuerzel,
+			orderInApp: feature.reihenfolgeInApp,
+			rgbColor: feature.rgbColor,
+			showInOverview: feature.showInSpeiseplanOverview,
+			showInFilter: !feature.showNotInFilter,
+		} satisfies Feature)
 	);
 }
 
 function extractAllergens(data: _Allergen[]) {
 	return data.map(
 		(allergen) =>
-			({
-				id: allergen.id,
-				name: allergen.name,
-				shortName: allergen.kuerzel,
-			} satisfies Allergen)
+		({
+			id: allergen.id,
+			name: allergen.name,
+			shortName: allergen.kuerzel,
+		} satisfies Allergen)
 	);
 }
 
 function extractAdditives(data: Zusatzstoff[]) {
 	return data.map(
 		(additive) =>
-			({
-				id: additive.id,
-				name: additive.name,
-				shortName: additive.kuerzel,
-			} satisfies Additive)
+		({
+			id: additive.id,
+			name: additive.name,
+			shortName: additive.kuerzel,
+		} satisfies Additive)
 	);
 }
 
@@ -265,8 +265,8 @@ function transformMeal(mealData: SpeiseplanGerichtData, canteenInfo?: Speiseplan
 		features: mealData.gerichtmerkmaleIds ? mealData.gerichtmerkmaleIds.split(',').map((id) => parseInt(id)) : [],
 		sustainability: zusatzinformationen
 			? {
-					co2: zusatzinformationen.sustainability?.co2?.co2Value ?? null,
-			  }
+				co2: zusatzinformationen.sustainability?.co2?.co2Value ?? null,
+			}
 			: null,
 		...(canteenInfo ? { canteen: transformCanteen(canteenInfo) } : {}),
 	};
