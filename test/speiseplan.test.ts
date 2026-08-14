@@ -28,4 +28,6 @@ test("successfully fetch kochwerk's capacity endpoint", async () => {
 	expect(capacity.success).toBe(true);
 	expect(capacity.content).toBeDefined();
 	expect(Array.isArray(capacity.content.historicalData.values)).toBe(true);
+	expect(capacity.content.historicalData.values.length).toBeGreaterThan(1);
+	expect(capacity.content.historicalData.values.every((point) => typeof point.value === 'number' && point.timestamp.length > 0)).toBe(true);
 });

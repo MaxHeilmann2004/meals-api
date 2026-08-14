@@ -2,22 +2,29 @@ const KOCHWERK_BASE = 'https://kochwerk-web.webspeiseplan.de';
 const KOCHWERK_MAIN_JS = `${KOCHWERK_BASE}/index.js`;
 const KOCHWERK_TOKEN_REGEX = /PROXY_TOKEN:"([A-Za-z0-9]+)"/;
 const KOCHWERK_API = 'https://kochwerk-web.webspeiseplan.de/index.php';
-const KOCHWERK_MEALS_ENDPOINT = 'https://kochwerk-web.webspeiseplan.de/index.php?model=menu&location=1800&languagetype=1';
 const KOCHWERK_REFERER = `${KOCHWERK_BASE}/menu`;
 const KOCHWERK_LOCATION = 1800;
 const KOCHWERK_LANG_DE = 1;
 
-function buildApiUrl(model: 'menu' | 'features' | 'allergens' | 'additives' | 'capacityOutlet', token: string, outlet?: number) {
+function buildApiUrl(
+	model: 'menu' | 'features' | 'allergens' | 'additives' | 'capacity' | 'capacityOutlet',
+	token: string,
+	outlet?: number,
+) {
 	const params = new URLSearchParams();
 	params.set('token', token);
 	params.set('model', model);
-	params.set('location', KOCHWERK_LOCATION.toString());
+	if (model !== 'capacityOutlet') {
+		params.set('location', KOCHWERK_LOCATION.toString());
+	}
 	params.set('languagetype', KOCHWERK_LANG_DE.toString());
 	if (outlet !== undefined) {
 		params.set('outlet', outlet.toString());
 	}
-	params.set('_', Date.now().toString());
-	return new URL(KOCHWERK_API + '?' + params.toString());
+	if (model !== 'capacityOutlet') {
+		params.set('_', Date.now().toString());
+	}
+	return `${KOCHWERK_API}?${params.toString()}`;
 }
 
 export async function getKochwerkToken() {
@@ -52,6 +59,13 @@ export async function getAllAllergens(): Promise<AllergensResponseData> {
 
 export async function getAllAdditives(): Promise<AdditivesResponseData> {
 	const req = await fetch(buildApiUrl('allergens', await getKochwerkToken()), {
+		headers: { Referer: KOCHWERK_REFERER },
+	});
+	return req.json();
+}
+
+export async function getCapacity(): Promise<CapacityResponseData> {
+	const req = await fetch(buildApiUrl('capacity', await getKochwerkToken()), {
 		headers: { Referer: KOCHWERK_REFERER },
 	});
 	return req.json();
@@ -217,6 +231,27 @@ export interface KochwerkResponse<T> {
 	content: T;
 }
 
+export interface CapacityConfigurationData {
+	id: number;
+	maxSitzplaetze: number;
+	durchschnittVerweildauer: number;
+	auswertungszeitraumVon: string;
+	auswertungszeitraumBis: string;
+	vergleichstag: number;
+	intervall: number;
+	durchschnittsArtikelAnzahl: number;
+	berechnungszeitpunktAusdruck: string;
+	limitValueLowInteger: number;
+	limitValueMiddleInteger: number;
+	limitValueHighInteger: number;
+	lowRGBColor: string | null;
+	middleRGBColor: string | null;
+	highRGBColor: string | null;
+	outletID: number;
+	timestampLog: string;
+	benutzerID: number;
+}
+
 export interface CapacityOutletConfiguration {
 	maxPersonsCount: number;
 	personsCountThreshold: number;
@@ -255,6 +290,8 @@ export interface CapacityOutletContent {
 }
 
 export type MealResponseData = KochwerkResponse<SpeiseplanLocation[]>;
+
+export type CapacityResponseData = KochwerkResponse<CapacityConfigurationData[]>;
 
 export type AdditivesResponseData = KochwerkResponse<Zusatzstoff[]>;
 

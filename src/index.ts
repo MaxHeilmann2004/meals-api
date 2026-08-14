@@ -1,19 +1,21 @@
 import {
-	_Allergen,
-	CapacityOutletContent,
-	CapacityOutletCurrentData,
-	CapacityOutletHistoricalValue,
-	Gerichtsmerkmal,
+	type _Allergen,
+	type CapacityConfigurationData,
+	type CapacityOutletContent,
+	type CapacityOutletCurrentData,
+	type CapacityOutletHistoricalValue,
+	type Gerichtsmerkmal,
 	getAllAdditives,
 	getAllAllergens,
+	getCapacity,
 	getCapacityOutlet,
 	getAllFeatures,
 	getMenu,
-	SpeiseplanAdvanced,
-	SpeiseplanGerichtData,
-	SpeiseplanLocation,
-	Zusatzinformationen,
-	Zusatzstoff,
+	type SpeiseplanAdvanced,
+	type SpeiseplanGerichtData,
+	type SpeiseplanLocation,
+	type Zusatzinformationen,
+	type Zusatzstoff,
 } from './speiseplan';
 import hashing from './utils/hashing';
 
@@ -72,7 +74,7 @@ async function getMeals(options?: {
 async function getMeals(
 	options: { start?: Date; end?: Date; mealLocation?: MealLocation | MealLocation[]; format?: 'byMeal' | 'byLocation' } = {
 		format: 'byMeal',
-	}
+	},
 ): Promise<DetailedMeal[] | CanteenWithMeals[]> {
 	const body = await getMenu();
 	if (options.format === 'byLocation') {
@@ -100,6 +102,15 @@ async function getFeatures() {
 	return extractFeatures(body.content);
 }
 
+async function getCapacityConfigurations(): Promise<CapacityConfiguration[]> {
+	const body = await getCapacity();
+	if (!body.success) {
+		throw new Error('Failed to fetch capacity configurations');
+	}
+
+	return body.content.map(transformCapacityConfiguration);
+}
+
 async function getOutletCapacity(outletId: number): Promise<OutletCapacity> {
 	const body = await getCapacityOutlet(outletId);
 	if (!body.success) {
@@ -107,6 +118,27 @@ async function getOutletCapacity(outletId: number): Promise<OutletCapacity> {
 	}
 
 	return transformOutletCapacity(body.content);
+}
+
+function transformCapacityConfiguration(data: CapacityConfigurationData): CapacityConfiguration {
+	return {
+		id: data.id,
+		maxPersonsCount: data.maxSitzplaetze,
+		averageDwellTimeMinutes: data.durchschnittVerweildauer,
+		analysisPeriodStart: data.auswertungszeitraumVon,
+		analysisPeriodEnd: data.auswertungszeitraumBis,
+		comparisonWeekday: data.vergleichstag,
+		intervalMinutes: data.intervall,
+		averageArticleCount: data.durchschnittsArtikelAnzahl,
+		calculationSchedule: data.berechnungszeitpunktAusdruck,
+		lowLimitPercent: data.limitValueLowInteger,
+		middleLimitPercent: data.limitValueMiddleInteger,
+		highLimitPercent: data.limitValueHighInteger,
+		lowColor: data.lowRGBColor,
+		middleColor: data.middleRGBColor,
+		highColor: data.highRGBColor,
+		outletId: data.outletID,
+	};
 }
 
 function transformOutletCapacity(data: CapacityOutletContent): OutletCapacity {
@@ -139,51 +171,51 @@ function transformHistoricalValue(value: CapacityOutletHistoricalValue): OutletC
 function extractFeatures(data: Gerichtsmerkmal[]) {
 	return data.map(
 		(feature) =>
-		({
-			id: feature.id,
-			name: feature.name,
-			shortName: feature.kuerzel,
-			orderInApp: feature.reihenfolgeInApp,
-			rgbColor: feature.rgbColor,
-			showInOverview: feature.showInSpeiseplanOverview,
-			showInFilter: !feature.showNotInFilter,
-		} satisfies Feature)
+			({
+				id: feature.id,
+				name: feature.name,
+				shortName: feature.kuerzel,
+				orderInApp: feature.reihenfolgeInApp,
+				rgbColor: feature.rgbColor,
+				showInOverview: feature.showInSpeiseplanOverview,
+				showInFilter: !feature.showNotInFilter,
+			}) satisfies Feature,
 	);
 }
 
 function extractAllergens(data: _Allergen[]) {
 	return data.map(
 		(allergen) =>
-		({
-			id: allergen.id,
-			name: allergen.name,
-			shortName: allergen.kuerzel,
-		} satisfies Allergen)
+			({
+				id: allergen.id,
+				name: allergen.name,
+				shortName: allergen.kuerzel,
+			}) satisfies Allergen,
 	);
 }
 
 function extractAdditives(data: Zusatzstoff[]) {
 	return data.map(
 		(additive) =>
-		({
-			id: additive.id,
-			name: additive.name,
-			shortName: additive.kuerzel,
-		} satisfies Additive)
+			({
+				id: additive.id,
+				name: additive.name,
+				shortName: additive.kuerzel,
+			}) satisfies Additive,
 	);
 }
 
 function extractMeals(
 	data: SpeiseplanLocation[],
-	options: { mealLocation?: MealLocation | MealLocation[]; format: 'byMeal'; start?: Date; end?: Date }
+	options: { mealLocation?: MealLocation | MealLocation[]; format: 'byMeal'; start?: Date; end?: Date },
 ): DetailedMeal[];
 function extractMeals(
 	data: SpeiseplanLocation[],
-	options: { mealLocation?: MealLocation | MealLocation[]; format: 'byLocation'; start?: Date; end?: Date }
+	options: { mealLocation?: MealLocation | MealLocation[]; format: 'byLocation'; start?: Date; end?: Date },
 ): CanteenWithMeals[];
 function extractMeals(
 	data: SpeiseplanLocation[],
-	options: { mealLocation?: MealLocation | MealLocation[]; format?: 'byMeal' | 'byLocation'; start?: Date; end?: Date }
+	options: { mealLocation?: MealLocation | MealLocation[]; format?: 'byMeal' | 'byLocation'; start?: Date; end?: Date },
 ): DetailedMeal[] | CanteenWithMeals[] {
 	// Initialize an array to hold all meals from all locations
 	const allMeals: DetailedMealWithCanteen[] = [];
@@ -265,8 +297,8 @@ function transformMeal(mealData: SpeiseplanGerichtData, canteenInfo?: Speiseplan
 		features: mealData.gerichtmerkmaleIds ? mealData.gerichtmerkmaleIds.split(',').map((id) => parseInt(id)) : [],
 		sustainability: zusatzinformationen
 			? {
-				co2: zusatzinformationen.sustainability?.co2?.co2Value ?? null,
-			}
+					co2: zusatzinformationen.sustainability?.co2?.co2Value ?? null,
+				}
 			: null,
 		...(canteenInfo ? { canteen: transformCanteen(canteenInfo) } : {}),
 	};
@@ -395,6 +427,25 @@ interface NutritionalInfo {
 	salt: number;
 }
 
+interface CapacityConfiguration {
+	id: number;
+	maxPersonsCount: number;
+	averageDwellTimeMinutes: number;
+	analysisPeriodStart: string;
+	analysisPeriodEnd: string;
+	comparisonWeekday: number;
+	intervalMinutes: number;
+	averageArticleCount: number;
+	calculationSchedule: string;
+	lowLimitPercent: number;
+	middleLimitPercent: number;
+	highLimitPercent: number;
+	lowColor: string | null;
+	middleColor: string | null;
+	highColor: string | null;
+	outletId: number;
+}
+
 interface OutletCapacityCurrentData {
 	valueRelative: number;
 	unitValueRelative: string;
@@ -431,7 +482,15 @@ export class MealLocation {
 	static Boulevard = new MealLocation('Boulevard', 'Bistro Boulevard Mittag');
 }
 
-const MealsAPI = { getMeals, hashString: hashing.cyrb53, getAdditives, getAllergens, getFeatures, getOutletCapacity };
+const MealsAPI = {
+	getMeals,
+	hashString: hashing.cyrb53,
+	getAdditives,
+	getAllergens,
+	getFeatures,
+	getCapacityConfigurations,
+	getOutletCapacity,
+};
 export default MealsAPI;
 export type {
 	Additive,
@@ -443,6 +502,7 @@ export type {
 	Feature,
 	LocationInfo,
 	NutritionalInfo,
+	CapacityConfiguration,
 	OutletCapacity,
 	OutletCapacityCurrentData,
 	OutletCapacityHistoricalValue,
