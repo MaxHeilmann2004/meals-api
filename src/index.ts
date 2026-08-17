@@ -5,8 +5,10 @@ import {
 	type CapacityOutletCurrentData,
 	type CapacityOutletHistoricalValue,
 	type Gerichtsmerkmal,
+	type MealCategoryData,
 	getAllAdditives,
 	getAllAllergens,
+	getAllMealCategories,
 	getCapacity,
 	getCapacityOutlet,
 	getAllFeatures,
@@ -92,6 +94,11 @@ async function getAdditives() {
 	return extractAdditives(body.content);
 }
 
+async function getMealCategories() {
+	const body = await getAllMealCategories();
+	return extractMealCategories(body.content);
+}
+
 async function getAllergens() {
 	const body = await getAllAllergens();
 	return extractAllergens(body.content);
@@ -166,6 +173,16 @@ function transformHistoricalValue(value: CapacityOutletHistoricalValue): OutletC
 		value: value.value,
 		timestamp: value.timestamp,
 	};
+}
+
+function extractMealCategories(data: MealCategoryData[]) {
+	return data.map(
+		(category) =>
+			({
+				id: category.gerichtkategorieID,
+				name: category.name,
+			}) satisfies MealCategory,
+	);
 }
 
 function extractFeatures(data: Gerichtsmerkmal[]) {
@@ -341,6 +358,11 @@ interface Allergen {
 	shortName: string | null;
 }
 
+interface MealCategory {
+	id: number;
+	name: string | null;
+}
+
 interface Feature {
 	id: number;
 	name: string;
@@ -486,6 +508,7 @@ const MealsAPI = {
 	getMeals,
 	hashString: hashing.cyrb53,
 	getAdditives,
+	getMealCategories,
 	getAllergens,
 	getFeatures,
 	getCapacityConfigurations,
@@ -495,6 +518,7 @@ export default MealsAPI;
 export type {
 	Additive,
 	Allergen,
+	MealCategory,
 	Canteen,
 	CanteenWithMeals,
 	DetailedMeal,

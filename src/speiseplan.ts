@@ -7,7 +7,7 @@ const KOCHWERK_LOCATION = 1800;
 const KOCHWERK_LANG_DE = 1;
 
 function buildApiUrl(
-	model: 'menu' | 'features' | 'allergens' | 'additives' | 'capacity' | 'capacityOutlet',
+	model: 'menu' | 'mealCategory' | 'features' | 'allergens' | 'additives' | 'capacity' | 'capacityOutlet',
 	token: string,
 	outlet?: number,
 ) {
@@ -38,6 +38,13 @@ export async function getKochwerkToken() {
 
 export async function getMenu(): Promise<MealResponseData> {
 	const req = await fetch(buildApiUrl('menu', await getKochwerkToken()), {
+		headers: { Referer: KOCHWERK_REFERER },
+	});
+	return await req.json();
+}
+
+export async function getAllMealCategories(): Promise<MealCategoriesResponseData> {
+	const req = await fetch(buildApiUrl('mealCategory', await getKochwerkToken()), {
 		headers: { Referer: KOCHWERK_REFERER },
 	});
 	return await req.json();
@@ -204,6 +211,20 @@ export interface _Allergen {
 	timestampLog: string;
 }
 
+export interface MealCategoryData {
+	id: number;
+	name: string | null;
+	logoImage: string | null;
+	reihenfolgeInApp: number;
+	titelNaehrwerte: string | null;
+	gerichtkategorieID: number;
+	languageTypeID: number;
+	bildschirmeID: number | null;
+	outletID: number | null;
+	benutzerID: number;
+	timestampLog: string;
+}
+
 export interface Gerichtsmerkmal {
 	id: number;
 	name: string;
@@ -290,6 +311,8 @@ export interface CapacityOutletContent {
 }
 
 export type MealResponseData = KochwerkResponse<SpeiseplanLocation[]>;
+
+export type MealCategoriesResponseData = KochwerkResponse<MealCategoryData[]>;
 
 export type CapacityResponseData = KochwerkResponse<CapacityConfigurationData[]>;
 
