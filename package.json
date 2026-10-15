@@ -11,7 +11,8 @@
 	"scripts": {
 		"build": "node build.js && tsc --emitDeclarationOnly",
 		"prepare": "node build.js && tsc --emitDeclarationOnly",
-		"test": "vitest"
+		"test": "vitest run",
+		"test:integration": "vitest run --config vitest.integration.config.ts"
 	},
 	"keywords": [],
 	"author": "",
