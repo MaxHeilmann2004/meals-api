@@ -1,102 +1,228 @@
-import { expect, test } from 'vitest';
-import MealsAPI, { MealLocation } from '../src';
+import { beforeEach, expect, test, vi } from 'vitest';
 
-/**
- * Returns the Date object for the specified day of the current week.
- *
- * @param dayOfWeek - The day of the week (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
- * @param referenceDate - (Optional) The reference date to determine the week. Defaults to today.
- * @returns The Date object representing the specified day of the current week.
- *
- * @example
- * // Get the date for Wednesday (3) of the current week
- * const wednesday = getDateOfCurrentWeek(3);
- */
-export function getDateOfCurrentWeek(dayOfWeek: number, referenceDate: Date = new Date()): Date {
-	const currentDay = referenceDate.getDay();
-	const diff = dayOfWeek - currentDay;
-	const result = new Date(referenceDate);
-	result.setDate(referenceDate.getDate() + diff);
-	return result;
+vi.mock('../src/speiseplan', async () => {
+	const actual = await vi.importActual<typeof import('../src/speiseplan')>('../src/speiseplan');
+	return {
+		...actual,
+		getMenu: vi.fn(),
+		getCapacity: vi.fn(),
+		getCapacityOutlet: vi.fn(),
+	};
+});
+
+import MealsAPI, { MealLocation } from '../src';
+import {
+	getCapacity,
+	getCapacityOutlet,
+	getMenu,
+	type CapacityConfigurationData,
+	type CapacityOutletContent,
+	type SpeiseplanGerichtData,
+	type SpeiseplanLocation,
+} from '../src/speiseplan';
+
+const mockedGetMenu = vi.mocked(getMenu);
+const mockedGetCapacity = vi.mocked(getCapacity);
+const mockedGetCapacityOutlet = vi.mocked(getCapacityOutlet);
+const monday = new Date('2026-10-12T00:00:00.000Z');
+const tuesday = new Date('2026-10-13T00:00:00.000Z');
+
+function createMeal(id: number, title: string, date: string): SpeiseplanGerichtData {
+	return {
+		speiseplanAdvancedGericht: {
+			id,
+			aktiv: true,
+			datum: date,
+			gerichtkategorieID: 999,
+			reihenfolgeInGerichtkategorie: 1,
+			gerichtname: title,
+			zusatzinformationenID: 0,
+			speiseplanAdvancedID: id,
+			timestampLog: `${date}T00:00:00.000Z`,
+			benutzerID: 1,
+		},
+		zusatzinformationen: null,
+		allergeneIds: '',
+		zusatzstoffeIds: null,
+		gerichtmerkmaleIds: '',
+	};
 }
 
-test("get meals for 'Elbe' monday of this week", async () => {
-	const monday = getDateOfCurrentWeek(1);
+function createLocation(id: number, name: string, meals: SpeiseplanGerichtData[]): SpeiseplanLocation {
+	return {
+		speiseplanAdvanced: {
+			id,
+			aktiv: true,
+			gueltigTaeglich: false,
+			showWeekend: true,
+			exportInactiveContent: false,
+			titel: name,
+			anzeigename: name,
+			gueltigVon: '2026-10-01',
+			gueltigBis: '2026-10-31',
+			reihenfolgeInApp: id,
+			speiseplanLayoutTypeID: null,
+			vendingMachineID: null,
+			orderConfigurationID: null,
+			pickupTimeID: null,
+			outletID: id,
+			timestampLog: '2026-10-01T00:00:00.000Z',
+			benutzerID: 1,
+			orderInfo: {
+				orderAllowed: false,
+				preOrderAllowed: false,
+				instantOrderAllowed: false,
+				shippingAllowed: false,
+				deliveryAssortment: false,
+				instantOrderMinimumOrderValue: null,
+				preOrderMinimumOrderValue: null,
+				shippingOrderMinimumOrderValue: null,
+				shippingCostFlatrate: null,
+				shippingCostThreshold: null,
+				postalCodeVerification: false,
+				reusableProvider: false,
+				reusableProviderId: null,
+				allowedOrderProcesses: [],
+				scan2go: false,
+			},
+			locationInfo: {
+				id,
+				name,
+			},
+			holidayInfo: [],
+			pickupTimeInfo: [],
+		},
+		speiseplanGerichtData: meals,
+	};
+}
 
-	const mealsElbe = await MealsAPI.getMeals({ start: monday, end: monday, mealLocation: MealLocation.Elbe, format: 'byMeal' });
-	expect(mealsElbe.length).toBeGreaterThan(0);
+const menu = [
+	createLocation(1, 'Elbe', [createMeal(11, 'Elbe Monday', '2026-10-12'), createMeal(12, 'Elbe Tuesday', '2026-10-13')]),
+	createLocation(2, 'Steelrunner', [createMeal(21, 'Steelrunner Monday', '2026-10-12')]),
+	createLocation(3, 'bonprix', [createMeal(31, 'Bonprix Monday', '2026-10-12')]),
+	createLocation(4, 'Bistro Boulevard Mittag', [createMeal(41, 'Boulevard Monday', '2026-10-12')]),
+];
+
+const capacityConfiguration: CapacityConfigurationData = {
+	id: 1,
+	maxSitzplaetze: 120,
+	durchschnittVerweildauer: 35,
+	auswertungszeitraumVon: '11:00',
+	auswertungszeitraumBis: '14:00',
+	vergleichstag: 1,
+	intervall: 15,
+	durchschnittsArtikelAnzahl: 2,
+	berechnungszeitpunktAusdruck: '*/15 * * * *',
+	limitValueLowInteger: 30,
+	limitValueMiddleInteger: 60,
+	limitValueHighInteger: 90,
+	lowRGBColor: '#00ff00',
+	middleRGBColor: '#ffff00',
+	highRGBColor: '#ff0000',
+	outletID: 4,
+	timestampLog: '2026-10-12T00:00:00.000Z',
+	benutzerID: 1,
+};
+
+const outletCapacity: CapacityOutletContent = {
+	configuration: {
+		maxPersonsCount: 120,
+		personsCountThreshold: 100,
+		goPictureURL: 'go.png',
+		stopPictureURL: 'stop.png',
+		showTextualPersonsCount: true,
+		lowSignalColor: '#00ff00',
+		lowSignalLimitValue: 30,
+		middleSignalColor: '#ffff00',
+		middleSignalLimitValue: 60,
+		highSignalColor: '#ff0000',
+		highSignalLimitValue: 90,
+	},
+	currentData: {
+		valueRelative: 0.5,
+		unitValueRelative: '%',
+		valueAbsolute: 60,
+		unitValueAbsolute: 'people',
+	},
+	historicalData: {
+		comparisonDay: '2026-10-05',
+		values: [{ value: 55, timestamp: '2026-10-05T12:00:00.000Z' }],
+	},
+};
+
+beforeEach(() => {
+	mockedGetMenu.mockReset();
+	mockedGetMenu.mockResolvedValue({ success: true, content: menu });
+	mockedGetCapacity.mockReset();
+	mockedGetCapacityOutlet.mockReset();
 });
 
-test("get meals for 'Steelrunner' monday of this week", async () => {
-	const monday = getDateOfCurrentWeek(1);
+test.each([
+	{ location: MealLocation.Elbe, title: 'Elbe Monday', canteenName: 'Elbe' },
+	{ location: MealLocation.Steelrunner, title: 'Steelrunner Monday', canteenName: 'Steelrunner' },
+	{ location: MealLocation.Bonprix, title: 'Bonprix Monday', canteenName: 'bonprix' },
+	{ location: MealLocation.Boulevard, title: 'Boulevard Monday', canteenName: 'Bistro Boulevard Mittag' },
+])('filters meals for $location.name', async ({ location, title, canteenName }) => {
+	const meals = await MealsAPI.getMeals({ start: monday, end: monday, mealLocation: location, format: 'byMeal' });
 
-	const mealsSteelrunner = await MealsAPI.getMeals({
+	expect(meals).toMatchObject([{ title, date: '2026-10-12', canteen: { name: canteenName } }]);
+});
+
+test('filters meals by date and supports selecting multiple locations', async () => {
+	const meals = await MealsAPI.getMeals({
 		start: monday,
-		end: monday,
-		mealLocation: MealLocation.Steelrunner,
+		end: tuesday,
+		mealLocation: [MealLocation.Elbe, MealLocation.Steelrunner],
 		format: 'byMeal',
 	});
-	expect(mealsSteelrunner).toBeInstanceOf(Array);
+
+	expect(meals.map(({ title }) => title)).toEqual(['Elbe Monday', 'Elbe Tuesday', 'Steelrunner Monday']);
 });
 
-test("get meals for 'Bonprix' monday of this week", async () => {
-	const monday = getDateOfCurrentWeek(1);
+test('returns meals for all locations and groups them by location when requested', async () => {
+	const meals = await MealsAPI.getMeals({ start: monday, end: monday, format: 'byMeal' });
+	expect(meals.map(({ title }) => title)).toEqual(['Elbe Monday', 'Steelrunner Monday', 'Bonprix Monday', 'Boulevard Monday']);
 
-	const mealsBonprix = await MealsAPI.getMeals({ start: monday, end: monday, mealLocation: MealLocation.Bonprix, format: 'byMeal' });
-	expect(mealsBonprix.length).toBeGreaterThan(0);
+	const canteens = await MealsAPI.getMeals({ start: monday, end: monday, format: 'byLocation' });
+	expect(canteens.map(({ name, meals: locationMeals }) => [name, locationMeals.map(({ title }) => title)])).toEqual([
+		['Elbe', ['Elbe Monday']],
+		['Steelrunner', ['Steelrunner Monday']],
+		['bonprix', ['Bonprix Monday']],
+		['Bistro Boulevard Mittag', ['Boulevard Monday']],
+	]);
 });
 
-test("get meals for 'Boulevard' monday of this week", async () => {
-	const monday = getDateOfCurrentWeek(1);
+test('returns an empty list when the selected date has no meals', async () => {
+	const noMealsDate = new Date('2026-10-14T00:00:00.000Z');
 
-	const mealsBoulevard = await MealsAPI.getMeals({ start: monday, end: monday, mealLocation: MealLocation.Boulevard, format: 'byMeal' });
-	expect(mealsBoulevard.length).toBeGreaterThan(0);
+	const meals = await MealsAPI.getMeals({ start: noMealsDate, end: noMealsDate, mealLocation: MealLocation.Elbe, format: 'byMeal' });
+
+	expect(meals).toEqual([]);
 });
 
-test("get meals for 'Boulevard' and 'Steelrunner' monday of this week", async () => {
-	const monday = getDateOfCurrentWeek(1);
+test('maps capacity configurations', async () => {
+	mockedGetCapacity.mockResolvedValue({ success: true, content: [capacityConfiguration] });
 
-	const mealsBoulevardSteelrunner = await MealsAPI.getMeals({
-		start: monday,
-		end: monday,
-		mealLocation: [MealLocation.Boulevard, MealLocation.Steelrunner],
-		format: 'byMeal',
-	});
-	expect(mealsBoulevardSteelrunner).toBeInstanceOf(Array);
-});
-
-test('get meals for all locations monday of this week', async () => {
-	const monday = getDateOfCurrentWeek(1);
-
-	const mealsAll = await MealsAPI.getMeals({ start: monday, end: monday, format: 'byMeal' });
-	expect(mealsAll.length).toBeGreaterThan(0);
-});
-
-test("get meals for 'Elbe' for the whole current week", async () => {
-	const monday = getDateOfCurrentWeek(1);
-	const friday = getDateOfCurrentWeek(5);
-
-	const mealsElbe = await MealsAPI.getMeals({ start: monday, end: friday, mealLocation: MealLocation.Elbe, format: 'byMeal' });
-	expect(mealsElbe.length).toBeGreaterThan(0);
-});
-
-test('get capacity configuration for canteen outlet id 4', async () => {
 	const configurations = await MealsAPI.getCapacityConfigurations();
-	const configuration = configurations.find((entry) => entry.outletId === 4);
 
-	expect(configuration).toBeDefined();
-	expect(configuration?.intervalMinutes).toBe(15);
-	expect(configuration?.maxPersonsCount).toBeGreaterThan(0);
+	expect(configurations).toMatchObject([
+		{
+			id: 1,
+			outletId: 4,
+			maxPersonsCount: 120,
+			averageDwellTimeMinutes: 35,
+			intervalMinutes: 15,
+			lowColor: '#00ff00',
+			middleColor: '#ffff00',
+			highColor: '#ff0000',
+		},
+	]);
 });
 
-test('get outlet capacity for canteen outlet id 4', async () => {
+test('maps outlet capacity data', async () => {
+	mockedGetCapacityOutlet.mockResolvedValue({ success: true, content: outletCapacity });
+
 	const capacity = await MealsAPI.getOutletCapacity(4);
 
-	expect(capacity).toBeDefined();
-	expect(capacity.currentData).toBeDefined();
-	expect(capacity.currentData.valueRelative).toBeGreaterThanOrEqual(0);
-	expect(capacity.currentData.valueAbsolute).toBeGreaterThanOrEqual(0);
-	expect(capacity.historicalData).toBeDefined();
-	expect(capacity.historicalData.values.length).toBeGreaterThan(1);
-	expect(capacity.historicalData.values.every((point) => point.value >= 0 && point.timestamp.length > 0)).toBe(true);
+	expect(capacity).toEqual(outletCapacity);
 });
