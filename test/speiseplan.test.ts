@@ -1,5 +1,10 @@
 import { expect, test } from 'vitest';
 import { getCapacityOutlet, getKochwerkToken, getMenu } from '../src/speiseplan';
+import { getKochwerkToken as getExportedKochwerkToken } from '../src/index';
+
+test('exports the Kochwerk token getter from the package entry point', () => {
+	expect(getExportedKochwerkToken).toBe(getKochwerkToken);
+});
 
 test('extract kochwerk token from main.js', async () => {
 	const token = await getKochwerkToken();

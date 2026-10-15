@@ -515,6 +515,7 @@ const MealsAPI = {
 	getOutletCapacity,
 };
 export default MealsAPI;
+export { getKochwerkToken } from './speiseplan';
 export type {
 	Additive,
 	Allergen,
